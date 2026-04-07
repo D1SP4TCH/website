@@ -348,7 +348,8 @@ export const Neural3DNetwork = ({ onReady, debugMode }: Neural3DNetworkProps) =>
     const drawnConnections = new Set<string>();
 
     nodes.forEach((node1) => {
-      if (!node1.mesh) return;
+      const mesh1 = node1.mesh;
+      if (!mesh1) return;
 
       node1.connections.forEach((connId) => {
         const connectionKey = [node1.id, connId].sort().join('-');
@@ -356,12 +357,10 @@ export const Neural3DNetwork = ({ onReady, debugMode }: Neural3DNetworkProps) =>
         drawnConnections.add(connectionKey);
 
         const node2 = nodes.find((n) => n.id === connId);
-        if (!node2 || !node2.mesh) return;
+        const mesh2 = node2?.mesh;
+        if (!node2 || !mesh2) return;
 
-        const points = [
-          node1.mesh.position.clone(),
-          node2.mesh.position.clone(),
-        ];
+        const points = [mesh1.position.clone(), mesh2.position.clone()];
 
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
         const material = new THREE.LineBasicMaterial({

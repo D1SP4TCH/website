@@ -103,16 +103,15 @@ function HexNode({ node, isHovered, isConnected, onClick, onPointerEnter, onPoin
 
 function ConnectionLine({ start, end }: { start: THREE.Vector3; end: THREE.Vector3 }) {
   const points = useMemo(() => [start, end], [start, end]);
+  const posArray = useMemo(
+    () => new Float32Array(points.flatMap((p) => [p.x, p.y, p.z])),
+    [points]
+  );
 
   return (
     <line>
       <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={points.length}
-          array={new Float32Array(points.flatMap(p => [p.x, p.y, p.z]))}
-          itemSize={3}
-        />
+        <bufferAttribute attach="attributes-position" args={[posArray, 3]} />
       </bufferGeometry>
       <lineBasicMaterial color={0x4a5568} transparent opacity={0.12} />
     </line>
@@ -127,16 +126,15 @@ function SignalBeam({ start, end, progress }: { start: THREE.Vector3; end: THREE
   const trailStartPos = useMemo(() => start.clone().lerp(end, trailStart), [start, end, trailStart]);
   
   const points = [trailStartPos, currentPos];
-  
+  const posArray = useMemo(
+    () => new Float32Array(points.flatMap((p) => [p.x, p.y, p.z])),
+    [trailStartPos, currentPos]
+  );
+
   return (
     <line>
       <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={points.length}
-          array={new Float32Array(points.flatMap(p => [p.x, p.y, p.z]))}
-          itemSize={3}
-        />
+        <bufferAttribute attach="attributes-position" args={[posArray, 3]} />
       </bufferGeometry>
       <lineBasicMaterial color={0xffffff} transparent opacity={0.9 * (1 - progress)} />
     </line>

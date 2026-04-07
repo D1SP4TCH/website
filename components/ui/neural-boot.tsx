@@ -21,7 +21,7 @@ interface NeuralBootProps {
 export const NeuralBoot = ({ onComplete, onSkip }: NeuralBootProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const nodesRef = useRef<Node[]>([]);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | undefined>(undefined);
   const mousePosition = useMousePosition();
   
   const [stage, setStage] = useState(0); // 0: forming, 1: pulsing, 2: revealing, 3: complete

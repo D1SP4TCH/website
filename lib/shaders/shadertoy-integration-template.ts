@@ -8,6 +8,7 @@
  * 4. Convert fragCoord/iResolution to vUv
  */
 
+import type { JSX } from 'react';
 import * as THREE from 'three';
 import { shaderMaterial } from '@react-three/drei';
 import { extend } from '@react-three/fiber';

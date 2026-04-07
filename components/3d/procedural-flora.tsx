@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef } from 'react';
+import type { JSX } from 'react';
 import { useFrame, extend } from '@react-three/fiber';
 import { shaderMaterial } from '@react-three/drei';
 import * as THREE from 'three';
@@ -212,8 +213,18 @@ extend({ FlowerPetalMaterial, GrassBladeMaterial });
 // Type declarations
 declare module '@react-three/fiber' {
   interface ThreeElements {
-    flowerPetalMaterial: JSX.IntrinsicElements['shaderMaterial'];
-    grassBladeMaterial: JSX.IntrinsicElements['shaderMaterial'];
+    flowerPetalMaterial: JSX.IntrinsicElements['shaderMaterial'] & {
+      uColor?: THREE.Color;
+      uCenterColor?: THREE.Color;
+      uTime?: number;
+      uStylized?: number;
+    };
+    grassBladeMaterial: JSX.IntrinsicElements['shaderMaterial'] & {
+      uColor?: THREE.Color;
+      uTipColor?: THREE.Color;
+      uTime?: number;
+      uWindStrength?: number;
+    };
   }
 }
 

@@ -17,7 +17,7 @@ interface Transform {
 
 export const useNeuralInteractions = (
   nodes: NeuralNode[],
-  canvasRef: React.RefObject<HTMLCanvasElement>,
+  canvasRef: React.RefObject<HTMLCanvasElement | null>,
   transform: Transform
 ) => {
   const [state, setState] = useState<InteractionState>({

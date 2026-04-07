@@ -10,7 +10,7 @@ export const useBootSequence = ({ onComplete, autoProgress = true }: UseBootSequ
   const [phase, setPhase] = useState<BootPhase>('bios');
   const [isComplete, setIsComplete] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const completeSequence = useCallback(() => {
     setIsComplete(true);

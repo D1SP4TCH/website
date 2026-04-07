@@ -13,6 +13,7 @@ export interface NeuralNode {
   connections: string[];
   x?: number;
   y?: number;
+  z?: number;
   vx?: number;
   vy?: number;
   fixed?: boolean;

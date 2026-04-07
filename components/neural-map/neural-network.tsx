@@ -32,7 +32,7 @@ export const NeuralNetwork = ({ onReady, debugMode }: NeuralNetworkProps) => {
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const [isInitialized, setIsInitialized] = useState(false);
   const [internalDebugMode, setInternalDebugMode] = useState(false);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | undefined>(undefined);
   const timeRef = useRef(0);
   
   // Use prop debugMode or internal state
@@ -205,7 +205,9 @@ export const NeuralNetwork = ({ onReady, debugMode }: NeuralNetworkProps) => {
       // Draw connections - optimized
       const drawnConnections = new Set<string>();
       nodes.forEach((node1) => {
-        if (!node1.x || !node1.y) return;
+        const x1 = node1.x;
+        const y1 = node1.y;
+        if (x1 === undefined || y1 === undefined) return;
 
         node1.connections.forEach((connId) => {
           // Avoid drawing same connection twice
@@ -214,7 +216,9 @@ export const NeuralNetwork = ({ onReady, debugMode }: NeuralNetworkProps) => {
           drawnConnections.add(connectionKey);
 
           const node2 = nodes.find((n) => n.id === connId);
-          if (!node2 || !node2.x || !node2.y) return;
+          const x2 = node2?.x;
+          const y2 = node2?.y;
+          if (!node2 || x2 === undefined || y2 === undefined) return;
 
           const isHighlighted =
             hoveredNode?.id === node1.id ||
@@ -228,8 +232,8 @@ export const NeuralNetwork = ({ onReady, debugMode }: NeuralNetworkProps) => {
             : `rgba(100, 100, 120, ${opacity})`;
           ctx.lineWidth = isHighlighted ? 2 : 1;
           ctx.beginPath();
-          ctx.moveTo(node1.x, node1.y);
-          ctx.lineTo(node2.x, node2.y);
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
           ctx.stroke();
         });
       });
@@ -238,11 +242,14 @@ export const NeuralNetwork = ({ onReady, debugMode }: NeuralNetworkProps) => {
       particles.forEach((particle) => {
         const node1 = nodes.find((n) => n.id === particle.node1Id);
         const node2 = nodes.find((n) => n.id === particle.node2Id);
-        
-        if (!node1 || !node2 || !node1.x || !node1.y || !node2.x || !node2.y) return;
+        const px1 = node1?.x;
+        const py1 = node1?.y;
+        const px2 = node2?.x;
+        const py2 = node2?.y;
+        if (!node1 || !node2 || px1 === undefined || py1 === undefined || px2 === undefined || py2 === undefined) return;
 
-        const x = node1.x + (node2.x - node1.x) * particle.progress;
-        const y = node1.y + (node2.y - node1.y) * particle.progress;
+        const x = px1 + (px2 - px1) * particle.progress;
+        const y = py1 + (py2 - py1) * particle.progress;
 
         ctx.fillStyle = '#8b5cf6';
         ctx.beginPath();
@@ -252,7 +259,9 @@ export const NeuralNetwork = ({ onReady, debugMode }: NeuralNetworkProps) => {
 
       // Draw nodes
       nodes.forEach((node) => {
-        if (!node.x || !node.y) return;
+        const nx = node.x;
+        const ny = node.y;
+        if (nx === undefined || ny === undefined) return;
 
         const radius = getNodeRadius(node.size);
         const isHovered = hoveredNode?.id === node.id;
@@ -266,19 +275,19 @@ export const NeuralNetwork = ({ onReady, debugMode }: NeuralNetworkProps) => {
         // Glow - simplified for performance
         if (isHovered || node.type === 'center') {
           const glowRadius = finalRadius * (node.type === 'center' ? 1.8 * pulse : 1.3);
-          const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, glowRadius);
+          const gradient = ctx.createRadialGradient(nx, ny, 0, nx, ny, glowRadius);
           gradient.addColorStop(0, `${node.color}40`);
           gradient.addColorStop(1, `${node.color}00`);
           ctx.fillStyle = gradient;
           ctx.beginPath();
-          ctx.arc(node.x, node.y, glowRadius, 0, Math.PI * 2);
+          ctx.arc(nx, ny, glowRadius, 0, Math.PI * 2);
           ctx.fill();
         }
 
         // Node circle
         ctx.fillStyle = node.color;
         ctx.beginPath();
-        ctx.arc(node.x, node.y, finalRadius * (node.type === 'center' ? pulse : 1), 0, Math.PI * 2);
+        ctx.arc(nx, ny, finalRadius * (node.type === 'center' ? pulse : 1), 0, Math.PI * 2);
         ctx.fill();
 
         // Border - thicker for center
@@ -294,11 +303,11 @@ export const NeuralNetwork = ({ onReady, debugMode }: NeuralNetworkProps) => {
         
         if (node.icon) {
           ctx.font = node.size === 'large' ? '32px sans-serif' : node.size === 'medium' ? '24px sans-serif' : '16px sans-serif';
-          ctx.fillText(node.icon, node.x, node.y);
+          ctx.fillText(node.icon, nx, ny);
         } else if (node.size === 'large') {
           const lines = node.title.split(' ');
           lines.forEach((line, i) => {
-            ctx.fillText(line, node.x, node.y + (i - lines.length / 2 + 0.5) * 20);
+            ctx.fillText(line, nx, ny + (i - lines.length / 2 + 0.5) * 20);
           });
         }
 
@@ -306,7 +315,7 @@ export const NeuralNetwork = ({ onReady, debugMode }: NeuralNetworkProps) => {
         if (node.size !== 'large' && !node.icon) {
           ctx.font = '12px sans-serif';
           ctx.fillStyle = '#000000';
-          ctx.fillText(node.title, node.x, node.y + finalRadius + 15);
+          ctx.fillText(node.title, nx, ny + finalRadius + 15);
         }
       });
 

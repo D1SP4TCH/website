@@ -73,9 +73,7 @@ export function FloatingDust({
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
-          count={count}
-          array={particles.positions}
-          itemSize={3}
+          args={[particles.positions, 3]}
         />
       </bufferGeometry>
       <pointsMaterial
@@ -146,9 +144,7 @@ export function ScreenParticles({
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
-            count={count}
-            array={particles.positions}
-            itemSize={3}
+            args={[particles.positions, 3]}
           />
         </bufferGeometry>
         <pointsMaterial
@@ -224,21 +220,15 @@ export function MagicSparkles({
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
-            count={count}
-            array={particles.positions}
-            itemSize={3}
+            args={[particles.positions, 3]}
           />
           <bufferAttribute
             attach="attributes-color"
-            count={count}
-            array={particles.colorArray}
-            itemSize={3}
+            args={[particles.colorArray, 3]}
           />
           <bufferAttribute
             attach="attributes-size"
-            count={count}
-            array={particles.sizes}
-            itemSize={1}
+            args={[particles.sizes, 1]}
           />
         </bufferGeometry>
         <pointsMaterial
@@ -301,9 +291,7 @@ export function DataStream({
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
-            count={count}
-            array={particles.positions}
-            itemSize={3}
+            args={[particles.positions, 3]}
           />
         </bufferGeometry>
         <pointsMaterial
@@ -411,9 +399,7 @@ export function FloatingFlowerParticles({
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
-            count={count}
-            array={particles.positions}
-            itemSize={3}
+            args={[particles.positions, 3]}
           />
         </bufferGeometry>
         <pointsMaterial
@@ -479,9 +465,7 @@ export function OrbitingParticles({
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
-            count={count}
-            array={particles.positions}
-            itemSize={3}
+            args={[particles.positions, 3]}
           />
         </bufferGeometry>
         <pointsMaterial
