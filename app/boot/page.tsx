@@ -22,8 +22,8 @@ export default function BootPage() {
 
   if (!showBoot) {
     return (
-      <div className="fixed inset-0 bg-white flex items-center justify-center">
-        <div className="text-purple-600 font-mono animate-pulse">
+      <div className="fixed inset-0 flex items-center justify-center bg-[#2f3731]">
+        <div className="animate-pulse font-mono text-sm uppercase tracking-[0.2em] text-white/70">
           Loading...
         </div>
       </div>

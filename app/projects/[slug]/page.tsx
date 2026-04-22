@@ -5,10 +5,14 @@ import { ProjectHero } from "@/components/ui/project-hero";
 import { ProjectContent } from "@/components/ui/project-content";
 import { ProjectNavigation } from "@/components/ui/project-navigation";
 
+const STATIC_CASE_STUDY_SLUGS = new Set(["vevey-landing", "portfolio"]);
+
 export async function generateStaticParams() {
-  return projects.map((project) => ({
-    slug: project.id,
-  }));
+  return projects
+    .filter((project) => !STATIC_CASE_STUDY_SLUGS.has(project.id))
+    .map((project) => ({
+      slug: project.id,
+    }));
 }
 
 export async function generateMetadata({
@@ -49,7 +53,7 @@ export default async function ProjectPage({
     currentIndex < projects.length - 1 ? projects[currentIndex + 1] : null;
 
   return (
-    <main className="min-h-screen">
+    <main className="-mt-24 min-h-screen bg-[#2f3731] pt-24 text-white">
       <ProjectHero project={project} />
       <ProjectContent project={project} />
       <ProjectNavigation prevProject={prevProject} nextProject={nextProject} />

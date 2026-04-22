@@ -16,33 +16,31 @@ import {
   PAINTERLY_PALETTES,
 } from '@/lib/shaders/painterly-shaders';
 import { 
-  ProceduralBush, 
-  ProceduralFern, 
   ProceduralFlower,
-  ProceduralGrassCluster,
+  type GardenBloomSpecies,
 } from './procedural-flora';
+import { ProceduralNiwaki, makeNiwakiGenes } from './procedural-niwaki';
+import { ProceduralBamboo, makeBambooGenes } from './procedural-bamboo';
 
 // ============================================
 // FLORA TYPE SELECTION
 // ============================================
 
-type FloraType = 'tree' | 'bush' | 'flower' | 'fern' | 'grass';
+type FloraType = 'tree' | 'flower' | 'niwaki' | 'bamboo';
 
 const getFloraType = (project: GardenProject): FloraType => {
-  // Determine flora type based on project properties
+  if (project.plantType) return project.plantType;
   switch (project.type) {
     case 'game':
-      return 'tree'; // Big, established
+      return 'bamboo';
     case 'web':
-      return project.monthsDuration > 3 ? 'bush' : 'flower';
+      return project.monthsDuration > 3 ? 'tree' : 'flower';
     case 'design':
-      return 'flower'; // Beautiful, visual
+      return 'flower';
     case 'experiment':
-      return 'fern'; // Wild, exploratory
-    case 'backend':
-      return project.monthsDuration > 4 ? 'tree' : 'grass';
+      return 'flower';
     default:
-      return 'bush';
+      return 'flower';
   }
 };
 
@@ -161,14 +159,6 @@ export const ProceduralPlant = ({
         />
       )}
       
-      {floraType === 'bush' && (
-        <ProceduralBush
-          genes={genes}
-          isSelected={isSelected}
-          isHovered={isHovered}
-        />
-      )}
-      
       {floraType === 'flower' && (
         <FlowerCluster
           genes={genes}
@@ -177,16 +167,17 @@ export const ProceduralPlant = ({
         />
       )}
       
-      {floraType === 'fern' && (
-        <ProceduralFern
+      {floraType === 'niwaki' && (
+        <NiwakiFromProject
           genes={genes}
+          project={project}
           isSelected={isSelected}
           isHovered={isHovered}
         />
       )}
-      
-      {floraType === 'grass' && (
-        <GrassClusterPlant
+
+      {floraType === 'bamboo' && (
+        <BambooFromProject
           genes={genes}
           isSelected={isSelected}
           isHovered={isHovered}
@@ -194,6 +185,59 @@ export const ProceduralPlant = ({
       )}
     </group>
   );
+};
+
+// ============================================
+// BAMBOO FROM PROJECT
+// ============================================
+
+interface BambooFromProjectProps {
+  genes: PlantGenes;
+  isSelected?: boolean;
+  isHovered?: boolean;
+}
+
+const BambooFromProject = ({ genes, isSelected, isHovered }: BambooFromProjectProps) => {
+  const bambooGenes = useMemo(
+    () =>
+      makeBambooGenes(genes.seed, {
+        height: Math.max(2.8, genes.height * 0.9 + 1.5),
+        culmCount: Math.max(3, Math.min(6, 2 + genes.complexity)),
+        culmColor: genes.stemColor,
+        leafColor: genes.leafColor,
+        accentColor: genes.accentColor,
+      }),
+    [genes]
+  );
+  const scale = isSelected ? 1.03 : isHovered ? 1.015 : 1;
+  return <ProceduralBamboo genes={bambooGenes} scale={scale} />;
+};
+
+// ============================================
+// NIWAKI FROM PROJECT
+// ============================================
+
+interface NiwakiFromProjectProps {
+  genes: PlantGenes;
+  project: GardenProject;
+  isSelected?: boolean;
+  isHovered?: boolean;
+}
+
+const NiwakiFromProject = ({ genes, project, isSelected, isHovered }: NiwakiFromProjectProps) => {
+  const niwakiGenes = useMemo(
+    () =>
+      makeNiwakiGenes(genes.seed, {
+        height: genes.height * 0.75,
+        padCount: Math.max(3, Math.min(7, 3 + genes.complexity)),
+        trunkColor: genes.stemColor,
+        padColor: genes.leafColor,
+        accentColor: genes.accentColor,
+      }),
+    [genes]
+  );
+  const scale = isSelected ? 1.03 : isHovered ? 1.015 : 1;
+  return <ProceduralNiwaki genes={niwakiGenes} scale={scale} />;
 };
 
 // ============================================
@@ -293,59 +337,67 @@ const FlowerCluster = ({ genes, isSelected, isHovered }: FlowerClusterProps) => 
   const rng = useMemo(() => new SeededRandom(genes.seed), [genes.seed]);
   
   const flowers = useMemo(() => {
-    // Keep clusters sparse enough to preserve readable wireframe silhouettes
-    const count = 5 + rng.int(0, 7); // 5-12 flowers
-    return Array.from({ length: count }).map((_, i) => {
-      // Stagger flowers in natural rings rather than uniform radial soup
-      const ring = i < Math.ceil(count * 0.4) ? 0 : i < Math.ceil(count * 0.75) ? 1 : 2;
-      const ringRadius = ring === 0 ? rng.range(0.05, 0.2) : ring === 1 ? rng.range(0.22, 0.42) : rng.range(0.45, 0.62);
-      const angle = (i / count) * Math.PI * 2 + rng.range(-0.35, 0.35);
-      const dist = ringRadius + rng.range(-0.04, 0.05);
-      const heightVariation = rng.range(0, 0.03);
+    const palette = [
+      '#E53935', '#FF4D4D', // red
+      '#8E24AA', '#B85CFF', // purple
+      '#1E88E5', '#4DA3FF', // blue
+      '#F4C430', '#FFD84D', // yellow
+    ];
+    const speciesList: GardenBloomSpecies[] = [
+      'garden-rose',
+      'cup-rose',
+      'water-lotus',
+      'orchid-spike',
+      'star-lily',
+      'sun-daisy',
+    ];
+    const bloomStages = [0.4, 0.58, 0.78, 1.0];
+
+    return Array.from({ length: 18 }).map((_, i) => {
+      const ring = i < 7 ? 0 : i < 13 ? 1 : 2;
+      const radius = ring === 0 ? rng.range(0.12, 0.4) : ring === 1 ? rng.range(0.42, 0.66) : rng.range(0.68, 0.82);
+      const angle = (i / 18) * Math.PI * 2 + rng.range(-0.22, 0.22);
       const variationSeed = rng.int(1, 1_000_000);
 
       return {
         position: new THREE.Vector3(
-          Math.cos(angle) * dist,
-          heightVariation,
-          Math.sin(angle) * dist
+          Math.cos(angle) * radius,
+          0,
+          Math.sin(angle) * radius
         ),
-        scale: 1.5 + rng.range(0, 1.0), // Larger flowers for readable wireframes
-        petalCount: 4 + rng.int(0, 3),
-        color: rng.pick([
-          '#FF4F7A', '#FF63B8', '#D86BFF', '#9E7CFF',
-          '#5D8BFF', '#40B7FF', '#35D7C0', '#FF6B6B',
-          '#FF8A80', '#F5F7FF', '#FFFFFF', '#E7ECFF'
-        ]),
+        scale: rng.range(0.55, 0.9),
+        petalCount: 0,
+        color: rng.pick(palette),
+        species: rng.pick(speciesList),
+        bloom: rng.pick(bloomStages),
         variationSeed,
       };
     });
   }, [genes.seed, rng]);
-  
-  // Create planter/rock base (must be before useFrame to maintain hook order)
+
   const planterRocks = useMemo(() => {
-    const rockCount = 8 + rng.int(0, 4);
-    const baseRadius = 0.9;
+    const rockCount = 10 + rng.int(0, 4);
+    const baseRadius = 1.05;
     return Array.from({ length: rockCount }).map((_, i) => {
       const angle = (i / rockCount) * Math.PI * 2 + rng.range(-0.1, 0.1);
-      const dist = baseRadius + rng.range(-0.05, 0.1);
-      const size = 0.1 + rng.range(0, 0.1); // Larger base size
-      
+      const dist = baseRadius + rng.range(-0.05, 0.08);
+      const size = 0.08 + rng.range(0, 0.08);
+
       return {
         position: [
           Math.cos(angle) * dist,
-          size * 0.5, // Higher position for taller rocks
-          Math.sin(angle) * dist
+          size * 0.45,
+          Math.sin(angle) * dist,
         ] as [number, number, number],
         scale: [
-          size * (1.2 + rng.range(0, 0.3)), // Thicker width
-          size * (0.7 + rng.range(0, 0.25)), // Taller height
-          size * (1.0 + rng.range(0, 0.3))   // Thicker depth
+          size * (1.1 + rng.range(0, 0.25)),
+          size * (0.65 + rng.range(0, 0.2)),
+          size * (0.95 + rng.range(0, 0.25)),
         ] as [number, number, number],
         rotation: [
           rng.range(-0.15, 0.15),
           rng.range(0, Math.PI * 2),
-          rng.range(-0.15, 0.15)
+          rng.range(-0.15, 0.15),
         ] as [number, number, number],
       };
     });
@@ -361,26 +413,22 @@ const FlowerCluster = ({ genes, isSelected, isHovered }: FlowerClusterProps) => 
   });
   
   const scale = isSelected ? 1.05 : isHovered ? 1.02 : 1;
-  
   const baseColor = new THREE.Color('#8B8075');
   
   return (
     <group ref={groupRef} scale={scale}>
-      {/* Decorative planter/rock base */}
       <group position={[0, 0, 0]}>
-        {/* Simple planter box */}
         <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.85, 0.95, 16]} />
+          <ringGeometry args={[0.95, 1.08, 16]} />
           <meshBasicMaterial color="#A89880" wireframe />
         </mesh>
-        
-        {/* Rocks around the base */}
+
         {planterRocks.map((rock, i) => {
           const color = baseColor.clone();
           const hsl = { h: 0, s: 0, l: 0 };
           color.getHSL(hsl);
           color.setHSL(hsl.h, hsl.s, hsl.l + rng.range(-0.03, 0.03));
-          
+
           return (
             <mesh
               key={`rock-${i}`}
@@ -389,16 +437,12 @@ const FlowerCluster = ({ genes, isSelected, isHovered }: FlowerClusterProps) => 
               rotation={rock.rotation}
             >
               <dodecahedronGeometry args={[1, 0]} />
-              <meshBasicMaterial
-                color={color}
-                wireframe
-              />
+              <meshBasicMaterial color={color} wireframe />
             </mesh>
           );
         })}
       </group>
-      
-      {/* Flowers above the planter */}
+
       {flowers.map((flower, i) => (
         <ProceduralFlower
           key={i}
@@ -407,63 +451,9 @@ const FlowerCluster = ({ genes, isSelected, isHovered }: FlowerClusterProps) => 
           petalCount={flower.petalCount}
           petalColor={flower.color}
           scale={flower.scale}
+          species={flower.species}
+          bloom={flower.bloom}
           variationSeed={flower.variationSeed}
-        />
-      ))}
-    </group>
-  );
-};
-
-// ============================================
-// GRASS CLUSTER PLANT
-// ============================================
-
-interface GrassClusterPlantProps {
-  genes: PlantGenes;
-  isSelected?: boolean;
-  isHovered?: boolean;
-}
-
-const GrassClusterPlant = ({ genes, isSelected, isHovered }: GrassClusterPlantProps) => {
-  const groupRef = useRef<THREE.Group>(null);
-  const rng = useMemo(() => new SeededRandom(genes.seed), [genes.seed]);
-  
-  const clusters = useMemo(() => {
-    const count = 4 + rng.int(0, 3);
-    return Array.from({ length: count }).map((_, i) => {
-      const angle = (i / count) * Math.PI * 2 + rng.range(-0.3, 0.3);
-      const dist = rng.range(0, 0.25);
-      
-      return {
-        position: [
-          Math.cos(angle) * dist,
-          0,
-          Math.sin(angle) * dist
-        ] as [number, number, number],
-        bladeCount: 8 + rng.int(0, 6),
-      };
-    });
-  }, [genes.seed, rng]);
-  
-  useFrame((state) => {
-    if (groupRef.current) {
-      const time = state.clock.getElapsedTime();
-      // Constant subtle sway, no rotation change on hover
-      const sway = 0.008;
-      groupRef.current.rotation.z = Math.sin(time * 1.2 + genes.seed) * sway;
-    }
-  });
-  
-  const scale = isSelected ? 1.1 : isHovered ? 1.05 : 1;
-  
-  return (
-    <group ref={groupRef} scale={scale}>
-      {clusters.map((cluster, i) => (
-        <ProceduralGrassCluster
-          key={i}
-          position={cluster.position}
-          genes={genes}
-          bladeCount={cluster.bladeCount}
         />
       ))}
     </group>

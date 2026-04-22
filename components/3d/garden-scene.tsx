@@ -6,7 +6,7 @@ import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import { ProceduralPlant } from './procedural-plant';
 import { DraggablePlant } from './draggable-plant';
 import { GardenGround, GardenDecorations } from './garden-ground';
-import { PAINTERLY_PALETTES } from '@/lib/shaders/painterly-shaders';
+import { GardenBackdrop, BACKDROP_HORIZON_COLOR, SKY_GRADIENT_CSS } from './garden-backdrop';
 import { ProjectDetailCard } from '../ui/project-detail-card';
 import { GardenEditorPanel, EditModeBadge } from '../ui/garden-editor-panel';
 import { 
@@ -15,9 +15,6 @@ import {
   useGardenEditorOptional,
 } from '@/lib/context/garden-editor-context';
 import type { GardenProject } from '@/lib/data/garden-portfolio';
-
-// Background color from palette
-const BG_COLOR = PAINTERLY_PALETTES.spring.ground.color3;
 
 /**
  * Main Garden Scene Component
@@ -45,10 +42,14 @@ const GardenSceneInner = () => {
   
   const handleProjectClick = useCallback((project: GardenProject) => {
     if (isEditMode) {
-      // In edit mode, select for editing
+      // In edit mode, select for editing (empty plants included — they need
+      // to be editable so you can link them to a project).
       selectProject(selectedProjectId === project.id ? null : project.id);
     } else {
-      // In view mode, show detail card
+      // In view mode, empty/decorative plants are just scenery.
+      if (project.isEmpty) {
+        return;
+      }
       setViewingProject(prev => prev?.id === project.id ? null : project);
     }
   }, [isEditMode, selectedProjectId, selectProject]);
@@ -68,14 +69,12 @@ const GardenSceneInner = () => {
         shadows={false}
         gl={{ 
           antialias: true, 
-          alpha: false,
+          alpha: true,
           powerPreference: 'high-performance',
         }}
-        style={{ background: BG_COLOR }}
+        style={{ background: SKY_GRADIENT_CSS }}
         dpr={[1, 1.5]}
       >
-        <color attach="background" args={[BG_COLOR]} />
-        
         <Suspense fallback={null}>
           <GardenSceneContent
             projects={projects}
@@ -225,6 +224,9 @@ const GardenSceneContent = ({
       {/* Simple lighting for wireframe - no shadows */}
       <ambientLight intensity={0.8} />
       
+      {/* Backdrop: sky + hills + distant tree line */}
+      <GardenBackdrop />
+
       {/* Ground */}
       <GardenGround />
       <GardenDecorations />
@@ -257,8 +259,8 @@ const GardenSceneContent = ({
         )
       ))}
       
-      {/* Atmospheric fog */}
-      <fog attach="fog" args={[BG_COLOR, 20, 45]} />
+      {/* Atmospheric fog — fades hills into the sky horizon */}
+      <fog attach="fog" args={[BACKDROP_HORIZON_COLOR, 22, 50]} />
     </>
   );
 };

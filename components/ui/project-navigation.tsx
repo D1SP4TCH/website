@@ -14,7 +14,7 @@ export function ProjectNavigation({
   nextProject,
 }: ProjectNavigationProps) {
   return (
-    <section className="border-t border-border py-16">
+    <section className="border-t border-white/15 py-16">
       <div className="container mx-auto px-6">
         <div className="grid gap-8 md:grid-cols-2">
           {prevProject && (
@@ -29,7 +29,7 @@ export function ProjectNavigation({
                 className="group block"
                 data-cursor-hover
               >
-                <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="mb-4 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-white/60">
                   <svg
                     className="h-4 w-4"
                     fill="none"
@@ -45,11 +45,11 @@ export function ProjectNavigation({
                   </svg>
                   Previous Project
                 </div>
-                <div className="overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all duration-300 group-hover:border-primary group-hover:shadow-lg">
-                  <h3 className="mb-2 text-xl font-bold group-hover:text-primary transition-colors">
+                <div className="overflow-hidden rounded-2xl border border-white/15 bg-white/[0.03] px-7 py-6 transition-all duration-300 group-hover:border-[#d2c22d]/70">
+                  <h3 className="mb-2 text-xl font-medium tracking-tight text-white transition-colors group-hover:text-[#f4f4d7] break-words">
                     {prevProject.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm leading-relaxed text-white/65 break-words">
                     {prevProject.description}
                   </p>
                 </div>
@@ -70,7 +70,7 @@ export function ProjectNavigation({
                 className="group block"
                 data-cursor-hover
               >
-                <div className="mb-4 flex items-center justify-end gap-2 text-sm text-muted-foreground">
+                <div className="mb-4 flex items-center justify-end gap-2 text-xs font-medium uppercase tracking-[0.16em] text-white/60">
                   Next Project
                   <svg
                     className="h-4 w-4"
@@ -86,11 +86,11 @@ export function ProjectNavigation({
                     />
                   </svg>
                 </div>
-                <div className="overflow-hidden rounded-2xl border border-border bg-card p-6 text-right transition-all duration-300 group-hover:border-primary group-hover:shadow-lg">
-                  <h3 className="mb-2 text-xl font-bold group-hover:text-primary transition-colors">
+                <div className="overflow-hidden rounded-2xl border border-white/15 bg-white/[0.03] px-7 py-6 text-right transition-all duration-300 group-hover:border-[#d2c22d]/70">
+                  <h3 className="mb-2 text-xl font-medium tracking-tight text-white transition-colors group-hover:text-[#f4f4d7] break-words">
                     {nextProject.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm leading-relaxed text-white/65 break-words">
                     {nextProject.description}
                   </p>
                 </div>

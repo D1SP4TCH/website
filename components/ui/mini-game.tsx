@@ -94,18 +94,22 @@ export function MiniGame() {
       viewport={{ once: true }}
       className="mx-auto max-w-2xl"
     >
-      <div className="overflow-hidden rounded-3xl border border-border bg-card p-8">
-        <h3 className="mb-4 text-2xl font-bold">Mini Game: Catch the Stars</h3>
-        <p className="mb-6 text-muted-foreground">
+      <div className="overflow-hidden rounded-3xl border border-white/15 bg-white/[0.03] p-8">
+        <h3 className="mb-4 text-2xl font-medium tracking-tight text-white">
+          Mini Game: Catch the Stars
+        </h3>
+        <p className="mb-6 text-base leading-relaxed text-white/70">
           Use arrow keys to move left and right. Catch the falling stars!
         </p>
 
         <div className="mb-4 flex items-center justify-between">
-          <div className="text-lg font-semibold">Score: {score}</div>
+          <div className="text-base font-medium uppercase tracking-[0.16em] text-white/80">
+            Score: {score}
+          </div>
           {!gameActive ? (
             <button
               onClick={startGame}
-              className="rounded-full bg-primary px-6 py-2 font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              className="rounded-full bg-[#d2c22d] px-6 py-2 text-sm font-medium text-[#2f3731] transition-colors hover:bg-[#e9eaae]"
               data-cursor-hover
             >
               Start Game
@@ -113,7 +117,7 @@ export function MiniGame() {
           ) : (
             <button
               onClick={endGame}
-              className="rounded-full border border-border px-6 py-2 font-semibold transition-colors hover:bg-muted"
+              className="rounded-full border border-white/20 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
               data-cursor-hover
             >
               End Game
@@ -123,7 +127,7 @@ export function MiniGame() {
 
         <div
           ref={gameRef}
-          className="relative h-96 overflow-hidden rounded-2xl bg-gradient-to-b from-primary/10 to-secondary/10"
+          className="relative h-96 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/10 to-[#202621]"
         >
           {gameActive && (
             <>

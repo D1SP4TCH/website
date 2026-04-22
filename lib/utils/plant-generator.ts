@@ -62,7 +62,6 @@ export const getPlantTypeName = (project: GardenProject): string => {
     case 'design': return 'Ornamental Tree';
     case 'experiment': return 'Wild Growth';
     case 'game': return 'Bamboo Grove';
-    case 'backend': return 'Root System';
     default: return 'Plant';
   }
 };

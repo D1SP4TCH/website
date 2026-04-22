@@ -9,6 +9,12 @@ const nextConfig: NextConfig = {
         hostname: "**",
       },
     ],
+    localPatterns: [
+      {
+        pathname: "/projects/**",
+        // search omitted -> allows any (or no) query string for cache busting
+      },
+    ],
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",

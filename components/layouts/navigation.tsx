@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -15,38 +14,32 @@ const navItems = [
 
 export function Navigation() {
   const pathname = usePathname();
-  const [scrolled, setScrolled] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  const lightNav = pathname === "/about";
 
   return (
     <motion.nav
+      data-top-chrome
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className={cn(
-        "fixed left-0 right-0 top-0 z-50 transition-all duration-300",
-        scrolled
-          ? "bg-background/80 backdrop-blur-lg shadow-lg"
-          : "bg-transparent"
-      )}
+      className="fixed left-0 right-0 top-0 z-50 border-b border-transparent bg-transparent transition-all duration-300"
     >
       <div className="container mx-auto flex items-center justify-between px-6 py-6">
         <Link
           href="/"
-          className="group relative text-2xl font-bold tracking-tighter"
+          className={cn(
+            "group relative text-xl font-medium tracking-tight md:text-2xl",
+            lightNav ? "text-[#2f3731]" : "text-white"
+          )}
           data-cursor-hover
         >
-          <span className="relative z-10">Portfolio</span>
+          <span className="relative z-10">Jason Chiu</span>
           <motion.span
-            className="absolute -bottom-1 left-0 h-0.5 bg-primary"
+            className={cn(
+              "absolute -bottom-1 left-0 h-0.5",
+              lightNav ? "bg-[#b4a84b]" : "bg-[#d2c22d]"
+            )}
             initial={{ width: 0 }}
             whileHover={{ width: "100%" }}
             transition={{ duration: 0.3 }}
@@ -64,8 +57,14 @@ export function Navigation() {
                 <Link
                   href={item.href}
                   className={cn(
-                    "relative text-sm font-medium transition-colors hover:text-foreground",
-                    isActive ? "text-foreground" : "text-muted-foreground"
+                    "relative text-xs font-medium uppercase tracking-[0.16em] transition-colors",
+                    lightNav
+                      ? isActive
+                        ? "text-[#2f3731]"
+                        : "text-[#758a7b] hover:text-[#2f3731]"
+                      : isActive
+                        ? "text-white"
+                        : "text-white/65 hover:text-white/90"
                   )}
                   data-cursor-hover
                 >
@@ -73,7 +72,10 @@ export function Navigation() {
                   {isActive && (
                     <motion.span
                       layoutId="activeNav"
-                      className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary"
+                      className={cn(
+                        "absolute -bottom-1 left-0 right-0 h-0.5",
+                        lightNav ? "bg-[#b4a84b]" : "bg-[#d2c22d]"
+                      )}
                       transition={{
                         type: "spring",
                         stiffness: 380,
@@ -90,5 +92,3 @@ export function Navigation() {
     </motion.nav>
   );
 }
-
-

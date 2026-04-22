@@ -10,10 +10,10 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <main className="relative min-h-screen">
+    <main className="relative -mt-24 min-h-screen bg-[#2f3731] pt-24 text-white">
       <MorphingBlob />
       <ContactHero />
-      <section className="py-24">
+      <section className="py-24 md:py-28">
         <div className="container mx-auto px-6">
           <div className="mx-auto max-w-2xl">
             <ContactForm />

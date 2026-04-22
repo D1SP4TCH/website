@@ -7,34 +7,38 @@ const skills = [
   {
     category: "Frontend",
     items: ["React", "Next.js", "TypeScript", "Tailwind CSS", "Framer Motion"],
-    color: "from-primary to-secondary",
   },
   {
     category: "3D & Graphics",
     items: ["Three.js", "WebGL", "GLSL", "Blender", "React Three Fiber"],
-    color: "from-secondary to-accent",
   },
   {
     category: "Backend",
     items: ["Node.js", "Express", "PostgreSQL", "MongoDB", "REST APIs"],
-    color: "from-accent to-primary",
   },
   {
     category: "Tools & Design",
     items: ["Figma", "Git", "Vercel", "Adobe CC", "Procreate"],
-    color: "from-primary via-secondary to-accent",
   },
 ];
 
 export function SkillsShowcase() {
   return (
-    <section className="relative overflow-hidden py-24">
+    <section className="relative overflow-hidden py-24 md:py-28">
       <div className="mb-16 text-center">
+        <motion.p
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-4 text-xs font-medium uppercase tracking-[0.24em] text-white/60"
+        >
+          Skills
+        </motion.p>
         <motion.h2
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mb-4 text-4xl font-bold md:text-5xl"
+          className="mb-4 text-3xl font-medium tracking-tight text-white md:text-4xl"
         >
           Skills & Expertise
         </motion.h2>
@@ -43,7 +47,7 @@ export function SkillsShowcase() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.2 }}
-          className="text-lg text-muted-foreground"
+          className="text-base leading-relaxed text-white/70 md:text-lg"
         >
           Scroll to explore my technical toolkit
         </motion.p>
@@ -60,9 +64,9 @@ export function SkillsShowcase() {
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
-              className={`h-full w-full rounded-3xl bg-gradient-to-br ${skill.color} p-12 shadow-2xl`}
+              className="h-full w-full rounded-3xl border border-white/15 bg-white/[0.03] p-12"
             >
-              <h3 className="mb-8 text-4xl font-bold text-white">
+              <h3 className="mb-8 text-3xl font-medium tracking-tight text-white md:text-4xl">
                 {skill.category}
               </h3>
               <ul className="space-y-4">
@@ -73,9 +77,9 @@ export function SkillsShowcase() {
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: itemIndex * 0.1 }}
-                    className="flex items-center gap-3 text-2xl text-white"
+                    className="flex items-center gap-3 text-xl text-white/85 md:text-2xl"
                   >
-                    <span className="text-3xl">•</span>
+                    <span className="text-2xl text-[#d2c22d]">•</span>
                     {item}
                   </motion.li>
                 ))}

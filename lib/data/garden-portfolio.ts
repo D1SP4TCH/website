@@ -3,7 +3,9 @@
  * Each project becomes a unique procedurally-generated plant
  */
 
-export type ProjectType = 'web' | 'design' | 'experiment' | 'game' | 'backend';
+export type ProjectType = 'web' | 'design' | 'experiment' | 'game';
+
+export type PlantType = 'tree' | 'flower' | 'niwaki' | 'bamboo';
 
 export interface GardenProject {
   id: string;
@@ -17,17 +19,31 @@ export interface GardenProject {
   liveUrl?: string;
   githubUrl?: string;
   date: string; // ISO date string
-  
+
   // Garden placement
   position: [number, number, number];
   rotation?: number;
-  
+
+  // Optional override: force a specific procedural plant type,
+  // bypassing the automatic mapping from `type`.
+  plantType?: PlantType;
+
   // Custom colors (override defaults)
   colors?: {
     branch?: string;
     leaf?: string;
     flower?: string;
   };
+
+  // Optional link to a featured project (see lib/data/featured-projects.ts).
+  // When set, clicking the plant in view mode opens a card that pulls the
+  // latest info from the project library and can deep-link into the case
+  // study. Unset means the plant is decorative or uses its own inline copy.
+  projectSlug?: string;
+
+  // True for purely decorative plants with no linked project. Clicking an
+  // empty plant in view mode is a no-op — they're just part of the scenery.
+  isEmpty?: boolean;
 }
 
 /**
@@ -150,7 +166,7 @@ export const sampleProjects: GardenProject[] = [
     id: 'ecommerce-platform',
     title: 'Artisan Marketplace',
     description: 'A full-stack e-commerce platform connecting local artisans with customers who appreciate handcrafted goods.',
-    type: 'backend',
+    type: 'web',
     techStack: ['Node.js', 'PostgreSQL', 'Redis', 'Stripe', 'Next.js'],
     monthsDuration: 6,
     featured: false,

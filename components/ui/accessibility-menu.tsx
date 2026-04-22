@@ -47,7 +47,7 @@ export function AccessibilityMenu() {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed bottom-20 left-4 z-[9999] w-80 rounded-2xl border border-border bg-card p-6 shadow-2xl"
+            className="fixed bottom-20 left-4 z-[9999] w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-card px-7 py-6 shadow-2xl"
           >
             <h3 className="mb-4 text-lg font-bold">Accessibility Settings</h3>
             

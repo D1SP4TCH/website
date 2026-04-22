@@ -35,3 +35,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local garden editor data (dev fallback when Vercel KV is not configured)
+.local-garden-projects.json

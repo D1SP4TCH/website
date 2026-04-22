@@ -33,26 +33,30 @@ export default function PlantLabPage() {
 
   if (!currentPlant) {
     return (
-      <div className="min-h-screen bg-[#E8E4D5] flex items-center justify-center">
-        <div className="text-[#4A4035] text-xl">Initializing Plant Lab...</div>
+      <div className="-mt-24 flex min-h-screen items-center justify-center bg-[#2f3731] pt-24">
+        <div className="text-sm font-medium uppercase tracking-[0.16em] text-white/65">
+          Initializing Plant Lab...
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#E8E4D5] text-[#4A4035]">
+    <div className="-mt-24 min-h-screen bg-[#2f3731] pt-24 text-white">
       {/* Header */}
-      <header className="border-b border-[#4A4035]/20 bg-[#E8E4D5]/80 backdrop-blur-sm sticky top-0 z-10">
+      <header className="sticky top-0 z-10 border-b border-white/10 bg-[#2f3731]/90 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">🌿 Plant Laboratory</h1>
-            <p className="text-sm text-[#8B8075]">Procedural L-System Plant Generator</p>
+            <h1 className="text-2xl font-medium tracking-tight">🌿 Plant Laboratory</h1>
+            <p className="text-xs font-medium uppercase tracking-[0.16em] text-white/60">
+              Procedural L-System Plant Generator
+            </p>
           </div>
           <a 
             href="/"
-            className="px-4 py-2 border border-[#4A4035]/30 rounded hover:bg-[#4A4035]/5 transition-colors"
+            className="inline-flex items-center gap-1 text-sm font-medium text-[#e9eaae] transition-colors duration-300 hover:text-[#f4f4d7]"
           >
-            ← Back Home
+            <span className="border-b border-[#d2c22d]/70 pb-0.5">← Back Home</span>
           </a>
         </div>
       </header>
@@ -61,9 +65,9 @@ export default function PlantLabPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* 3D Viewer - Takes 2 columns */}
           <div className="lg:col-span-2">
-            <div className="bg-white/40 backdrop-blur-sm rounded-lg border border-[#4A4035]/20 overflow-hidden">
+            <div className="overflow-hidden rounded-lg border border-white/15 bg-white/[0.03] backdrop-blur-sm">
               {/* Canvas */}
-              <div className="relative aspect-[4/3] bg-gradient-to-b from-[#E8E4D5] to-[#D5E8E4]">
+              <div className="relative aspect-[4/3] bg-gradient-to-b from-[#3a443d] to-[#202621]">
                 <Canvas>
                   <PerspectiveCamera makeDefault position={[0, 0, 4]} />
                   <OrbitControls 
@@ -81,7 +85,7 @@ export default function PlantLabPage() {
                   {/* Ground plane */}
                   <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
                     <planeGeometry args={[10, 10]} />
-                    <meshBasicMaterial color="#C4B5A0" wireframe />
+                    <meshBasicMaterial color="#465045" wireframe />
                   </mesh>
 
                   {/* Plant */}
@@ -100,25 +104,27 @@ export default function PlantLabPage() {
 
                 {/* Generation overlay */}
                 {isGenerating && (
-                  <div className="absolute inset-0 bg-[#E8E4D5]/80 flex items-center justify-center">
+                  <div className="absolute inset-0 flex items-center justify-center bg-[#2f3731]/85">
                     <div className="text-center">
                       <div className="text-6xl mb-2 animate-pulse">🌱</div>
-                      <div className="text-[#4A4035] font-medium">Growing plant...</div>
+                      <div className="text-sm font-medium uppercase tracking-[0.16em] text-white/70">
+                        Growing plant...
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Controls */}
-              <div className="p-6 bg-white/60 border-t border-[#4A4035]/20">
+              <div className="border-t border-white/10 bg-white/[0.03] p-6">
                 <button
                   onClick={generateNewPlant}
                   disabled={isGenerating}
-                  className="w-full bg-[#7BA05B] hover:bg-[#6B9A5B] disabled:bg-[#8B8075] text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:scale-100 disabled:cursor-not-allowed shadow-lg"
+                  className="w-full rounded-lg bg-[#d2c22d] px-6 py-3 text-sm font-medium uppercase tracking-[0.12em] text-[#2f3731] transition-all hover:scale-[1.02] hover:bg-[#e9eaae] active:scale-[0.98] disabled:scale-100 disabled:cursor-not-allowed disabled:bg-white/30 disabled:text-white/70"
                 >
                   {isGenerating ? '🌱 Growing...' : '✨ Generate New Plant'}
                 </button>
-                <p className="text-xs text-[#8B8075] text-center mt-2">
+                <p className="mt-2 text-center text-xs text-white/60">
                   Click and drag to rotate • Scroll to zoom
                 </p>
               </div>
@@ -128,89 +134,89 @@ export default function PlantLabPage() {
           {/* Info Panel - 1 column */}
           <div className="space-y-6">
             {/* Plant Info */}
-            <div className="bg-white/40 backdrop-blur-sm rounded-lg border border-[#4A4035]/20 p-6">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <div className="rounded-lg border border-white/15 bg-white/[0.03] p-6 backdrop-blur-sm">
+              <h2 className="mb-4 flex items-center gap-2 text-xl font-medium tracking-tight">
                 <span>🏷️</span> Plant DNA
               </h2>
               
               <div className="space-y-4">
                 <div>
-                  <div className="text-sm text-[#8B8075]">Common Name</div>
-                  <div className="font-semibold text-lg">{currentPlant.name}</div>
+                  <div className="text-xs font-medium uppercase tracking-[0.16em] text-white/60">Common Name</div>
+                  <div className="text-lg font-medium">{currentPlant.name}</div>
                 </div>
 
                 <div>
-                  <div className="text-sm text-[#8B8075]">Scientific Name</div>
-                  <div className="font-medium italic">{currentPlant.scientificName}</div>
+                  <div className="text-xs font-medium uppercase tracking-[0.16em] text-white/60">Scientific Name</div>
+                  <div className="font-medium italic text-white/85">{currentPlant.scientificName}</div>
                 </div>
 
                 <div>
-                  <div className="text-sm text-[#8B8075]">Species</div>
+                  <div className="text-xs font-medium uppercase tracking-[0.16em] text-white/60">Species</div>
                   <div className="font-medium capitalize">
                     {currentPlant.species}
                     {currentPlant.hybridWith && (
-                      <span className="text-[#8B8075]"> × {currentPlant.hybridWith}</span>
+                      <span className="text-white/55"> × {currentPlant.hybridWith}</span>
                     )}
                   </div>
                 </div>
 
-                <div className="border-t border-[#4A4035]/10 pt-4">
-                  <div className="text-sm text-[#8B8075] mb-2">Genetic Parameters</div>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="border-t border-white/10 pt-4">
+                  <div className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-white/60">Genetic Parameters</div>
+                  <div className="grid grid-cols-2 gap-2 text-sm text-white/85">
                     <div>
-                      <span className="text-[#8B8075]">Branch Angle:</span>
+                      <span className="text-white/60">Branch Angle:</span>
                       <div className="font-mono">{currentPlant.params.angle.toFixed(1)}°</div>
                     </div>
                     <div>
-                      <span className="text-[#8B8075]">Iterations:</span>
+                      <span className="text-white/60">Iterations:</span>
                       <div className="font-mono">{currentPlant.params.iterations}</div>
                     </div>
                     <div>
-                      <span className="text-[#8B8075]">Seg. Length:</span>
+                      <span className="text-white/60">Seg. Length:</span>
                       <div className="font-mono">{currentPlant.params.segmentLength.toFixed(2)}</div>
                     </div>
                     <div>
-                      <span className="text-[#8B8075]">Seg. Decay:</span>
+                      <span className="text-white/60">Seg. Decay:</span>
                       <div className="font-mono">{currentPlant.params.segmentDecay.toFixed(2)}</div>
                     </div>
                   </div>
                 </div>
 
-                <div className="border-t border-[#4A4035]/10 pt-4">
-                  <div className="text-sm text-[#8B8075] mb-2">Color Palette</div>
+                <div className="border-t border-white/10 pt-4">
+                  <div className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-white/60">Color Palette</div>
                   <div className="flex gap-2">
                     <div 
-                      className="w-10 h-10 rounded border border-[#4A4035]/20"
+                      className="h-10 w-10 rounded border border-white/20"
                       style={{ backgroundColor: currentPlant.colors.stem }}
                       title="Stem"
                     />
                     <div 
-                      className="w-10 h-10 rounded border border-[#4A4035]/20"
+                      className="h-10 w-10 rounded border border-white/20"
                       style={{ backgroundColor: currentPlant.colors.leaf }}
                       title="Leaf"
                     />
                     <div 
-                      className="w-10 h-10 rounded border border-[#4A4035]/20"
+                      className="h-10 w-10 rounded border border-white/20"
                       style={{ backgroundColor: currentPlant.colors.flower }}
                       title="Flower"
                     />
                     <div 
-                      className="w-10 h-10 rounded border border-[#4A4035]/20"
+                      className="h-10 w-10 rounded border border-white/20"
                       style={{ backgroundColor: currentPlant.colors.accent }}
                       title="Accent"
                     />
                   </div>
                 </div>
 
-                <div className="border-t border-[#4A4035]/10 pt-4">
-                  <div className="text-sm text-[#8B8075] mb-2">L-System Rules</div>
-                  <div className="bg-[#4A4035]/5 rounded p-3 font-mono text-xs space-y-1 max-h-32 overflow-y-auto">
+                <div className="border-t border-white/10 pt-4">
+                  <div className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-white/60">L-System Rules</div>
+                  <div className="max-h-32 space-y-1 overflow-y-auto rounded border border-white/10 bg-white/[0.03] p-3 font-mono text-xs text-white/85">
                     <div>
-                      <span className="text-[#8B8075]">Axiom:</span> {currentPlant.params.axiom}
+                      <span className="text-white/60">Axiom:</span> {currentPlant.params.axiom}
                     </div>
                     {Object.entries(currentPlant.params.rules).map(([symbol, rule]) => (
                       <div key={symbol}>
-                        <span className="text-[#8B8075]">{symbol} →</span> {rule as string}
+                        <span className="text-white/60">{symbol} →</span> {rule as string}
                       </div>
                     ))}
                   </div>
@@ -220,8 +226,8 @@ export default function PlantLabPage() {
 
             {/* History */}
             {plantHistory.length > 1 && (
-              <div className="bg-white/40 backdrop-blur-sm rounded-lg border border-[#4A4035]/20 p-6">
-                <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+              <div className="rounded-lg border border-white/15 bg-white/[0.03] p-6 backdrop-blur-sm">
+                <h2 className="mb-3 flex items-center gap-2 text-lg font-medium tracking-tight">
                   <span>📚</span> Recent Plants
                 </h2>
                 <div className="space-y-2">
@@ -229,10 +235,10 @@ export default function PlantLabPage() {
                     <button
                       key={idx}
                       onClick={() => setCurrentPlant(plant)}
-                      className="w-full text-left p-3 bg-white/40 hover:bg-white/60 rounded border border-[#4A4035]/10 transition-colors"
+                      className="w-full rounded border border-white/10 bg-white/[0.03] p-3 text-left transition-colors hover:bg-white/10"
                     >
                       <div className="font-medium text-sm truncate">{plant.name}</div>
-                      <div className="text-xs text-[#8B8075] italic">{plant.scientificName}</div>
+                      <div className="text-xs italic text-white/60">{plant.scientificName}</div>
                     </button>
                   ))}
                 </div>
@@ -240,11 +246,11 @@ export default function PlantLabPage() {
             )}
 
             {/* Info Card */}
-            <div className="bg-white/40 backdrop-blur-sm rounded-lg border border-[#4A4035]/20 p-6">
-              <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+            <div className="rounded-lg border border-white/15 bg-white/[0.03] p-6 backdrop-blur-sm">
+              <h2 className="mb-3 flex items-center gap-2 text-lg font-medium tracking-tight">
                 <span>ℹ️</span> About L-Systems
               </h2>
-              <p className="text-sm text-[#4A4035]/80 leading-relaxed">
+              <p className="text-sm leading-relaxed text-white/70">
                 L-systems (Lindenmayer Systems) use recursive production rules to simulate 
                 natural plant growth. Each plant is generated from a seed using branching 
                 patterns inspired by real botanical structures like ferns, trees, and flowers.

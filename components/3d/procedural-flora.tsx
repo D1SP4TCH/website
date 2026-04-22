@@ -232,44 +232,40 @@ declare module '@react-three/fiber' {
 // PROCEDURAL FLOWER
 // ============================================
 
-type PetalShapeType = 'teardrop' | 'round' | 'spear' | 'heart';
-
-// Create petal shape geometry variants for species diversity
-const createPetalGeometry = (shapeType: PetalShapeType = 'teardrop') => {
+// Test-page petal geometry (kept identical for visual parity)
+const createVolumetricPetalGeometry = (
+  width: number,
+  length: number,
+  detail: number,
+  depth = 0.014
+) => {
   const shape = new THREE.Shape();
 
-  if (shapeType === 'round') {
-    // Rounded daisy-like petal
-    shape.moveTo(0, 0);
-    shape.bezierCurveTo(0.22, 0.08, 0.3, 0.42, 0.18, 0.75);
-    shape.bezierCurveTo(0.1, 0.95, 0.0, 1.02, 0.0, 1.02);
-    shape.bezierCurveTo(0.0, 1.02, -0.1, 0.95, -0.18, 0.75);
-    shape.bezierCurveTo(-0.3, 0.42, -0.22, 0.08, 0, 0);
-  } else if (shapeType === 'spear') {
-    // Long spear/lily-like petal
-    shape.moveTo(0, 0);
-    shape.bezierCurveTo(0.08, 0.08, 0.12, 0.45, 0.07, 0.9);
-    shape.bezierCurveTo(0.03, 1.15, 0.0, 1.22, 0.0, 1.22);
-    shape.bezierCurveTo(0.0, 1.22, -0.03, 1.15, -0.07, 0.9);
-    shape.bezierCurveTo(-0.12, 0.45, -0.08, 0.08, 0, 0);
-  } else if (shapeType === 'heart') {
-    // Heart-like cosmos/anemone petal
-    shape.moveTo(0, 0);
-    shape.bezierCurveTo(0.2, 0.12, 0.24, 0.42, 0.1, 0.72);
-    shape.bezierCurveTo(0.03, 0.86, 0.06, 0.96, 0.0, 1.03);
-    shape.bezierCurveTo(-0.06, 0.96, -0.03, 0.86, -0.1, 0.72);
-    shape.bezierCurveTo(-0.24, 0.42, -0.2, 0.12, 0, 0);
-  } else {
-    // Teardrop default petal
-    shape.moveTo(0, 0);
-    shape.bezierCurveTo(0.15, 0.1, 0.2, 0.4, 0.12, 0.7);
-    shape.bezierCurveTo(0.05, 0.9, 0, 1, 0, 1);
-    shape.bezierCurveTo(0, 1, -0.05, 0.9, -0.12, 0.7);
-    shape.bezierCurveTo(-0.2, 0.4, -0.15, 0.1, 0, 0);
-  }
+  shape.moveTo(0, 0);
+  shape.bezierCurveTo(width * 0.85, length * 0.2, width * 0.92, length * 0.62, 0, length);
+  shape.bezierCurveTo(-width * 0.92, length * 0.62, -width * 0.85, length * 0.2, 0, 0);
 
-  const geometry = new THREE.ShapeGeometry(shape, 16);
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    steps: 1,
+    bevelEnabled: true,
+    bevelThickness: depth * 0.45,
+    bevelSize: width * 0.06,
+    bevelSegments: 1,
+    curveSegments: detail,
+  });
+
+  geometry.translate(0, 0, -depth * 0.5);
   return geometry;
+};
+
+// Compact leaf shape so stem leaves stay understated in flower clusters
+const createStemLeafGeometry = () => {
+  const shape = new THREE.Shape();
+  shape.moveTo(0, 0);
+  shape.bezierCurveTo(0.22, 0.08, 0.3, 0.34, 0.0, 0.66);
+  shape.bezierCurveTo(-0.3, 0.34, -0.22, 0.08, 0, 0);
+  return new THREE.ShapeGeometry(shape, 12);
 };
 
 interface FlowerProps {
@@ -281,470 +277,370 @@ interface FlowerProps {
   variationSeed?: number;
   stylized?: boolean; // Enable Blender-style crystalline look
   noRotation?: boolean; // Disable rotation for decorative flowers
+  species?: GardenBloomSpecies;
+  bloom?: number;
 }
 
-export const ProceduralFlower = ({ 
-  position, 
-  genes, 
+export type GardenBloomSpecies = 'garden-rose' | 'star-lily' | 'cup-rose' | 'sun-daisy' | 'orchid-spike' | 'water-lotus';
+type FlowerShapeType = 'teardrop' | 'oval' | 'spear' | 'heart' | 'fan' | 'ruffle' | 'frond' | 'needle';
+
+type LayerConfig = {
+  shape: FlowerShapeType;
+  count: [number, number];
+  width: [number, number];
+  length: [number, number];
+  depth: number;
+  tilt: [number, number];
+  radial: [number, number];
+  size: [number, number];
+};
+
+type SpeciesConfig = {
+  layers: LayerConfig[];
+  centerColor: string;
+  centerRadius: [number, number];
+  innerBlend: number;
+  leafShape: FlowerShapeType;
+  leafCount: [number, number];
+  stemRadius: [number, number];
+};
+
+type PetalInstance = {
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale: [number, number, number];
+};
+
+const createGardenFlowerShapeGeometry = (
+  shapeType: FlowerShapeType,
+  width: number,
+  length: number,
+  detail: number,
+  depth = 0.014
+): THREE.ExtrudeGeometry => {
+  const shape = new THREE.Shape();
+
+  if (shapeType === 'oval') {
+    shape.moveTo(0, 0);
+    shape.bezierCurveTo(width * 1.0, length * 0.18, width * 1.1, length * 0.68, 0, length);
+    shape.bezierCurveTo(-width * 1.1, length * 0.68, -width * 1.0, length * 0.18, 0, 0);
+  } else if (shapeType === 'spear') {
+    shape.moveTo(0, 0);
+    shape.bezierCurveTo(width * 0.48, length * 0.2, width * 0.35, length * 0.8, 0, length);
+    shape.bezierCurveTo(-width * 0.35, length * 0.8, -width * 0.48, length * 0.2, 0, 0);
+  } else if (shapeType === 'heart') {
+    shape.moveTo(0, 0);
+    shape.bezierCurveTo(width * 1.2, length * 0.14, width * 0.95, length * 0.54, 0, length);
+    shape.bezierCurveTo(-width * 0.95, length * 0.54, -width * 1.2, length * 0.14, 0, 0);
+  } else if (shapeType === 'fan') {
+    shape.moveTo(0, 0);
+    shape.bezierCurveTo(width * 1.28, length * 0.26, width * 1.12, length * 0.82, 0, length);
+    shape.bezierCurveTo(-width * 1.12, length * 0.82, -width * 1.28, length * 0.26, 0, 0);
+  } else if (shapeType === 'ruffle') {
+    shape.moveTo(0, 0);
+    shape.bezierCurveTo(width * 1.12, length * 0.16, width * 1.22, length * 0.56, width * 0.5, length * 0.86);
+    shape.bezierCurveTo(width * 0.15, length * 0.95, width * 0.08, length * 0.98, 0, length);
+    shape.bezierCurveTo(-width * 0.08, length * 0.98, -width * 0.15, length * 0.95, -width * 0.5, length * 0.86);
+    shape.bezierCurveTo(-width * 1.22, length * 0.56, -width * 1.12, length * 0.16, 0, 0);
+  } else if (shapeType === 'frond') {
+    shape.moveTo(0, 0);
+    shape.bezierCurveTo(width * 0.78, length * 0.16, width * 0.96, length * 0.76, width * 0.2, length);
+    shape.bezierCurveTo(-width * 0.28, length * 0.84, -width * 0.58, length * 0.26, 0, 0);
+  } else if (shapeType === 'needle') {
+    shape.moveTo(0, 0);
+    shape.bezierCurveTo(width * 0.3, length * 0.2, width * 0.25, length * 0.72, 0, length);
+    shape.bezierCurveTo(-width * 0.25, length * 0.72, -width * 0.3, length * 0.2, 0, 0);
+  } else {
+    shape.moveTo(0, 0);
+    shape.bezierCurveTo(width * 0.85, length * 0.2, width * 0.92, length * 0.62, 0, length);
+    shape.bezierCurveTo(-width * 0.92, length * 0.62, -width * 0.85, length * 0.2, 0, 0);
+  }
+
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    steps: 1,
+    bevelEnabled: false,
+    curveSegments: Math.max(6, Math.floor(detail * 0.45)),
+  });
+  geometry.translate(0, 0, -depth * 0.5);
+  return geometry;
+};
+
+const GARDEN_SPECIES: Record<GardenBloomSpecies, SpeciesConfig> = {
+  'garden-rose': {
+    layers: [
+      { shape: 'ruffle', count: [7, 10], width: [0.085, 0.11], length: [0.12, 0.17], depth: 0.014, tilt: [0.01, 0.08], radial: [0.0, 0.015], size: [0.7, 0.9] },
+      { shape: 'heart', count: [8, 12], width: [0.1, 0.13], length: [0.17, 0.24], depth: 0.012, tilt: [0.08, 0.17], radial: [0.02, 0.06], size: [0.85, 1.02] },
+      { shape: 'oval', count: [6, 9], width: [0.11, 0.14], length: [0.22, 0.3], depth: 0.01, tilt: [0.14, 0.26], radial: [0.06, 0.12], size: [0.98, 1.14] },
+    ],
+    centerColor: '#E7C978',
+    centerRadius: [0.028, 0.05],
+    innerBlend: 0.22,
+    leafShape: 'oval',
+    leafCount: [2, 3],
+    stemRadius: [0.013, 0.019],
+  },
+  'star-lily': {
+    layers: [
+      { shape: 'spear', count: [9, 14], width: [0.08, 0.12], length: [0.34, 0.46], depth: 0.013, tilt: [0.28, 0.44], radial: [0.02, 0.06], size: [0.9, 1.2] },
+      { shape: 'needle', count: [7, 11], width: [0.05, 0.08], length: [0.25, 0.34], depth: 0.01, tilt: [0.14, 0.26], radial: [0.0, 0.03], size: [0.75, 0.95] },
+    ],
+    centerColor: '#EED37D',
+    centerRadius: [0.055, 0.085],
+    innerBlend: 0.35,
+    leafShape: 'needle',
+    leafCount: [2, 4],
+    stemRadius: [0.012, 0.018],
+  },
+  'cup-rose': {
+    layers: [
+      { shape: 'ruffle', count: [6, 9], width: [0.11, 0.14], length: [0.22, 0.32], depth: 0.018, tilt: [0.04, 0.12], radial: [0.01, 0.03], size: [0.95, 1.1] },
+      { shape: 'heart', count: [7, 12], width: [0.08, 0.12], length: [0.2, 0.28], depth: 0.014, tilt: [0.08, 0.2], radial: [0.04, 0.08], size: [0.82, 1.0] },
+      { shape: 'teardrop', count: [10, 14], width: [0.06, 0.09], length: [0.14, 0.2], depth: 0.01, tilt: [0.1, 0.24], radial: [0.08, 0.14], size: [0.72, 0.9] },
+    ],
+    centerColor: '#F0D488',
+    centerRadius: [0.04, 0.07],
+    innerBlend: 0.4,
+    leafShape: 'oval',
+    leafCount: [2, 3],
+    stemRadius: [0.014, 0.02],
+  },
+  'sun-daisy': {
+    layers: [
+      { shape: 'teardrop', count: [11, 16], width: [0.09, 0.13], length: [0.3, 0.42], depth: 0.016, tilt: [0.2, 0.34], radial: [0.03, 0.07], size: [0.9, 1.15] },
+      { shape: 'fan', count: [8, 12], width: [0.08, 0.11], length: [0.18, 0.28], depth: 0.012, tilt: [0.08, 0.2], radial: [0.01, 0.03], size: [0.76, 0.94] },
+    ],
+    centerColor: '#E8C76D',
+    centerRadius: [0.07, 0.1],
+    innerBlend: 0.28,
+    leafShape: 'frond',
+    leafCount: [2, 5],
+    stemRadius: [0.013, 0.019],
+  },
+  'orchid-spike': {
+    layers: [
+      { shape: 'heart', count: [5, 8], width: [0.1, 0.13], length: [0.18, 0.26], depth: 0.014, tilt: [0.18, 0.32], radial: [0.03, 0.06], size: [0.9, 1.15] },
+      { shape: 'oval', count: [4, 7], width: [0.07, 0.1], length: [0.14, 0.2], depth: 0.011, tilt: [0.08, 0.2], radial: [0.0, 0.025], size: [0.7, 0.92] },
+    ],
+    centerColor: '#E7CC82',
+    centerRadius: [0.045, 0.07],
+    innerBlend: 0.45,
+    leafShape: 'spear',
+    leafCount: [3, 5],
+    stemRadius: [0.01, 0.016],
+  },
+  'water-lotus': {
+    layers: [
+      { shape: 'fan', count: [8, 12], width: [0.1, 0.14], length: [0.24, 0.34], depth: 0.014, tilt: [0.12, 0.24], radial: [0.05, 0.1], size: [0.9, 1.1] },
+      { shape: 'oval', count: [10, 14], width: [0.08, 0.11], length: [0.18, 0.26], depth: 0.011, tilt: [0.08, 0.18], radial: [0.02, 0.06], size: [0.78, 0.96] },
+      { shape: 'teardrop', count: [6, 10], width: [0.07, 0.1], length: [0.14, 0.2], depth: 0.01, tilt: [0.06, 0.14], radial: [0.0, 0.02], size: [0.65, 0.82] },
+    ],
+    centerColor: '#EACF75',
+    centerRadius: [0.06, 0.09],
+    innerBlend: 0.3,
+    leafShape: 'oval',
+    leafCount: [2, 4],
+    stemRadius: [0.012, 0.018],
+  },
+};
+
+export const ProceduralFlower = ({
+  position,
+  genes,
   petalCount = 5,
   petalColor,
   scale = 1,
   variationSeed,
   stylized = false,
-  noRotation = false
+  noRotation = false,
+  species = 'garden-rose',
+  bloom = 0.88,
 }: FlowerProps) => {
   const groupRef = useRef<THREE.Group>(null);
-  const materialRefs = useRef<THREE.ShaderMaterial[]>([]);
-  
-  // Pre-compute ALL random values in useMemo to avoid render-time randomness
+  void petalCount;
+  void stylized;
+  const cfg = GARDEN_SPECIES[species];
+
   const flowerData = useMemo(() => {
     const positionHash = Math.floor((position.x * 997 + position.y * 211 + position.z * 431) * 1000);
-    const rng = new SeededRandom(genes.seed + 5000 + (variationSeed ?? positionHash));
+    const seed = genes.seed + 5000 + (variationSeed ?? positionHash);
+    const rng = new SeededRandom(seed);
+    const stemHeight = rng.range(0.55, 1.15);
+    const swayX = rng.range(-0.1, 0.1);
+    const swayZ = rng.range(-0.1, 0.1);
 
-    const flowerStyle = rng.pick(['cosmos', 'anemone', 'daisy', 'lily'] as const);
-    const styleConfig = {
-      cosmos: { petalBias: 1, centerScale: 0.85, innerRatio: 0.42, tiltBase: 0.26, tiltVar: 0.22, petalShape: 'heart' as PetalShapeType, centerType: 'button' as const },
-      anemone: { petalBias: 2, centerScale: 1.35, innerRatio: 0.85, tiltBase: 0.2, tiltVar: 0.15, petalShape: 'round' as PetalShapeType, centerType: 'disk' as const },
-      daisy: { petalBias: 0, centerScale: 1.0, innerRatio: 0.55, tiltBase: 0.32, tiltVar: 0.2, petalShape: 'teardrop' as PetalShapeType, centerType: 'button' as const },
-      lily: { petalBias: -1, centerScale: 0.7, innerRatio: 0.18, tiltBase: 0.12, tiltVar: 0.1, petalShape: 'spear' as PetalShapeType, centerType: 'star' as const },
-    }[flowerStyle];
+    const stemCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(swayX * 0.2, stemHeight * 0.22, swayZ * 0.2),
+      new THREE.Vector3(swayX * 0.55, stemHeight * 0.56, swayZ * 0.55),
+      new THREE.Vector3(swayX * 0.9, stemHeight * 0.84, swayZ * 0.9),
+      new THREE.Vector3(swayX, stemHeight, swayZ),
+    ]);
 
-    const stemHeight = 0.34 + rng.range(0, 0.42);
-    const petals = Math.max(4, petalCount + styleConfig.petalBias + rng.int(-1, 2));
-    const petalLength = 0.18 + rng.range(0, 0.14);
-    const petalWidth = 0.075 + rng.range(0, 0.05);
-    const centerSize = (0.028 + rng.range(0, 0.02)) * styleConfig.centerScale;
-    
-    // Stem bend - one point of curve (like nature)
-    // Bend happens at some point along the stem, then straight after
-    const bendPoint = rng.range(0.3, 0.7); // Where along the stem the bend occurs (30-70% up)
-    const bendAngleX = rng.range(-0.3, 0.3); // Horizontal bend angle
-    const bendAngleZ = rng.range(-0.2, 0.2); // Depth bend angle
-    const bendHeight = stemHeight * bendPoint;
-    
-    // Calculate the offset at the bend point
-    const bendOffsetX = Math.sin(bendAngleX) * bendHeight * 0.3;
-    const bendOffsetZ = Math.sin(bendAngleZ) * bendHeight * 0.3;
-    
-    // Calculate direction after bend
-    const remainingHeight = stemHeight - bendHeight;
-    const finalOffsetX = bendOffsetX + Math.sin(bendAngleX) * remainingHeight * 0.5;
-    const finalOffsetZ = bendOffsetZ + Math.sin(bendAngleZ) * remainingHeight * 0.5;
-    
-    // Calculate the direction vector of the stem after the bend
-    const stemDirectionX = finalOffsetX - bendOffsetX;
-    const stemDirectionY = remainingHeight;
-    const stemDirectionZ = finalOffsetZ - bendOffsetZ;
-    
-    // Calculate rotation angles to follow the stem direction
-    // Y rotation (around vertical axis) based on horizontal direction
-    const stemRotationY = Math.atan2(stemDirectionX, stemDirectionZ);
-    // X rotation (tilt forward/back) based on the angle of the stem segment
-    const stemLength = Math.sqrt(stemDirectionX * stemDirectionX + stemDirectionY * stemDirectionY + stemDirectionZ * stemDirectionZ);
-    const stemRotationX = Math.asin(stemDirectionY / stemLength);
-    
-    // Flower head tilt
-    const headTiltX = 0.15 + rng.range(0, 0.25);
-    const headTiltZ = rng.range(-0.08, 0.08);
-    
-    // Petal color palette: wider species-like variety (white, red, pink, blue, violet, mint)
-    const baseColor = petalColor || (stylized 
-      ? rng.pick([
-          '#7D5CFF', '#AA6BFF', '#5A8FFF', '#40B8FF',
-          '#36D6C0', '#FF5C8A', '#FF7AB6', '#F5F7FF'
-        ])
-      : rng.pick([
-          '#FF4F7A', '#FF64B6', '#E07BFF', '#A38AFF',
-          '#5D8BFF', '#40B7FF', '#35D7C0', '#FFFFFF', '#EAF0FF', '#FF6B6B'
-        ])
+    const stemGeom = new THREE.TubeGeometry(
+      stemCurve,
+      24,
+      rng.range(cfg.stemRadius[0], cfg.stemRadius[1]),
+      7,
+      false
     );
 
-    // Push flower tones into vivid, bright ranges so they never look muddy
-    const vividColorObj = new THREE.Color(baseColor);
-    const vividHsl = { h: 0, s: 0, l: 0 };
-    vividColorObj.getHSL(vividHsl);
-    const color = new THREE.Color().setHSL(
-      vividHsl.h,
-      Math.min(1, vividHsl.s * 1.25 + 0.08),
-      Math.max(0.52, Math.min(0.76, vividHsl.l * 1.08 + 0.05))
-    ).getStyle();
-    
-    // Pre-compute petal data
-    const petalData = Array.from({ length: petals }).map((_, i) => ({
-      angle: (i / petals) * Math.PI * 2 + rng.range(-0.08, 0.08),
-      tiltAngle: styleConfig.tiltBase + rng.range(0, styleConfig.tiltVar),
-      petalScale: 0.82 + rng.range(0, 0.34),
-      radius: centerSize * rng.range(0.55, 1.15),
-    }));
-    
-    // Inner petals (slightly smaller, offset angle)
-    const innerPetalCount = petals >= 5 ? Math.floor(petals * styleConfig.innerRatio) : 0;
-    const innerPetalData = Array.from({ length: innerPetalCount }).map((_, i) => ({
-      angle: (i / Math.max(1, innerPetalCount)) * Math.PI * 2 + (Math.PI / petals) + rng.range(-0.06, 0.06),
-      petalScale: 0.52 + rng.range(0, 0.28),
-      radius: centerSize * rng.range(0.2, 0.62),
+    const leaves = Array.from({ length: rng.int(cfg.leafCount[0], cfg.leafCount[1]) }).map((_, i) => ({
+      y: stemHeight * rng.range(0.2, 0.78),
+      angle: i * Math.PI + rng.range(-0.5, 0.5),
+      width: rng.range(0.75, 1.2),
+      length: rng.range(0.7, 1.18),
+      roll: rng.range(-0.22, 0.22),
+      geom: createGardenFlowerShapeGeometry(
+        cfg.leafShape,
+        rng.range(0.07, 0.13),
+        rng.range(0.18, 0.33),
+        14,
+        0.008
+      ),
     }));
 
-    const centerPalette = {
-      cosmos: rng.pick(['#F6E27A', '#FFE5B0', '#F8D59A']),
-      anemone: rng.pick(['#2C2140', '#3A2552', '#4C2D66']),
-      daisy: rng.pick(['#F5D95E', '#F7C95D', '#F1D07A']),
-      lily: rng.pick(['#D4A55A', '#8D4B2D', '#C78A54']),
-    }[flowerStyle];
-    
-    // Create a simpler stem path so wireframe stays clean
-    const stemPoints = [
-      new THREE.Vector3(0, 0, 0), // Base - straight up
-      new THREE.Vector3(0, bendHeight * 0.9, 0), // Just before bend
-      new THREE.Vector3(bendOffsetX, bendHeight, bendOffsetZ), // Bend point
-      new THREE.Vector3(finalOffsetX * 0.85, stemHeight, finalOffsetZ * 0.85), // Softer end offset
-    ];
-    const stemCurve = new THREE.CatmullRomCurve3(stemPoints);
+    const layers = cfg.layers.map((layer, layerIndex) => {
+      const count = rng.int(layer.count[0], layer.count[1]);
+      const budWrapStrengthBySpecies: Record<GardenBloomSpecies, number> = {
+        'garden-rose': 1.0,
+        'cup-rose': 0.78,
+        'water-lotus': 0.6,
+        'orchid-spike': 0.5,
+        'sun-daisy': 0.34,
+        'star-lily': 0.25,
+      };
+      const budSpeciesFactor = budWrapStrengthBySpecies[species];
+      const geom = createGardenFlowerShapeGeometry(
+        layer.shape,
+        rng.range(layer.width[0], layer.width[1]),
+        rng.range(layer.length[0], layer.length[1]),
+        22 - layerIndex * 3,
+        layer.depth
+      );
 
-    const stemLeafCount = rng.int(1, 4);
-    const stemLeaves = Array.from({ length: stemLeafCount }).map(() => {
-      const t = rng.range(0.2, 0.78);
-      const side = rng.pick([-1, 1] as const);
-      const spread = rng.range(0.02, 0.05) * side;
+      const petals = Array.from({ length: count }).map<PetalInstance>((_, i) => {
+        const openFactor = THREE.MathUtils.clamp(bloom, 0, 1);
+        const openness = openFactor;
+        const wrapStrength = 1 - openness;
+        const budCoreShape =
+          Math.max(0, 1 - layerIndex * (0.5 + (1 - budSpeciesFactor) * 0.25)) * budSpeciesFactor;
+        const budCoreFold = budCoreShape * wrapStrength;
+        const budSpiral = (i / count) * Math.PI * 2;
+        const budInwardYaw = budCoreFold * THREE.MathUtils.lerp(1.1, 0.2, openness);
+
+        const angle = (i / count) * Math.PI * 2 + rng.range(-0.025, 0.025);
+        const radial = rng.range(layer.radial[0], layer.radial[1]) * (0.03 + openness * 0.9);
+        const height = layerIndex * 0.003 * (0.15 + openness * 1.0);
+        const size = rng.range(layer.size[0], layer.size[1]) * (0.72 + openness * 0.34);
+
+        const inwardDir = new THREE.Vector3(-Math.cos(angle), 0, -Math.sin(angle)).normalize();
+        const outwardDir = inwardDir.clone().multiplyScalar(-1);
+        const fullBloomBlend = THREE.MathUtils.smoothstep(openness, 0.74, 1.0) * 0.5;
+        const zAxis = inwardDir
+          .clone()
+          .lerp(outwardDir, fullBloomBlend)
+          .add(new THREE.Vector3(0, THREE.MathUtils.lerp(0.02, 0.12, openness), 0))
+          .normalize();
+
+        const yTarget = outwardDir
+          .clone()
+          .multiplyScalar(THREE.MathUtils.lerp(0.06, 1.55, openness))
+          .add(new THREE.Vector3(0, THREE.MathUtils.lerp(1.0, 0.32, openness), 0));
+        const yProjected = yTarget.sub(zAxis.clone().multiplyScalar(yTarget.dot(zAxis)));
+        let yAxis = yProjected.lengthSq() > 1e-6
+          ? yProjected.normalize()
+          : new THREE.Vector3(0, 1, 0);
+        if (yAxis.y < 0.12) {
+          const upProjected = new THREE.Vector3(0, 1, 0)
+            .sub(zAxis.clone().multiplyScalar(zAxis.y))
+            .normalize();
+          yAxis = yAxis.clone().lerp(upProjected, 0.5).normalize();
+        }
+        const xAxis = new THREE.Vector3().crossVectors(yAxis, zAxis).normalize();
+        const correctedYAxis = new THREE.Vector3().crossVectors(zAxis, xAxis).normalize();
+
+        const basis = new THREE.Matrix4().makeBasis(xAxis, correctedYAxis, zAxis);
+        const q = new THREE.Quaternion().setFromRotationMatrix(basis);
+        const roll = (wrapStrength * rng.range(0.02, 0.1))
+          + (budCoreFold * Math.sin(budSpiral) * THREE.MathUtils.lerp(0.1, 0.03, openness))
+          + (budInwardYaw * 0.03);
+        q.multiply(new THREE.Quaternion().setFromAxisAngle(zAxis, roll));
+        const e = new THREE.Euler().setFromQuaternion(q);
+
+        return {
+          position: [Math.cos(angle) * radial, height, Math.sin(angle) * radial],
+          rotation: [e.x, e.y, e.z],
+          scale: [size, size, 1],
+        };
+      });
+
       return {
-        t,
-        spread,
-        yawOffset: rng.range(0.6, 1.2) * side,
-        roll: rng.range(0.2, 0.7) * side,
-        sizeX: rng.range(0.04, 0.085),
-        sizeY: rng.range(0.08, 0.18),
+        edgeGeom: new THREE.EdgesGeometry(geom, 24),
+        petals,
       };
     });
-    
-    return { 
-      stemHeight, 
-      centerSize,
-      petals, 
-      petalLength,
-      petalWidth,
-      headTiltX, 
-      headTiltZ,
-      color,
-      centerCoreColor: centerPalette,
-      petalShape: styleConfig.petalShape,
-      centerType: styleConfig.centerType,
-      petalData,
-      innerPetalData,
-      stemLeaves,
-      stemCurve,
-      finalOffsetX,
-      finalOffsetZ,
-      stemRotationX,
-      stemRotationY,
+
+    return {
+      stemGeom,
+      leaves,
+      layers,
+      headOffset: [swayX, stemHeight, swayZ] as [number, number, number],
+      headTilt: [rng.range(-0.28, 0.28), rng.range(0, Math.PI * 2), rng.range(-0.2, 0.2)] as [number, number, number],
+      centerGeom: new THREE.IcosahedronGeometry(rng.range(cfg.centerRadius[0], cfg.centerRadius[1]), 0),
     };
-  }, [genes.seed, petalCount, petalColor, stylized, variationSeed, position.x, position.y, position.z]);
-  
-  const petalGeometry = useMemo(() => createPetalGeometry(flowerData.petalShape), [flowerData.petalShape]);
-  const stemLeafGeometry = useMemo(() => createPetalGeometry('teardrop'), []);
+  }, [bloom, cfg, genes.seed, position.x, position.y, position.z, species, variationSeed]);
 
-  const centerGeometry = useMemo(() => {
-    if (flowerData.centerType === 'disk') {
-      return new THREE.CylinderGeometry(
-        flowerData.centerSize * 1.35,
-        flowerData.centerSize * 1.55,
-        flowerData.centerSize * 0.8,
-        10
-      );
-    }
-    if (flowerData.centerType === 'star') {
-      return new THREE.OctahedronGeometry(flowerData.centerSize * 1.25, 0);
-    }
-    return new THREE.SphereGeometry(flowerData.centerSize * 1.5, 10, 8);
-  }, [flowerData.centerSize, flowerData.centerType]);
-  
-  // Inner color derived from main color
-  const innerColor = useMemo(() => {
-    const colorObj = new THREE.Color(flowerData.color);
-    const hsl = { h: 0, s: 0, l: 0 };
-    colorObj.getHSL(hsl);
-    return new THREE.Color().setHSL(hsl.h, hsl.s * 0.8, Math.min(1, hsl.l * 1.1));
-  }, [flowerData.color]);
+  const outerColor = useMemo(() => new THREE.Color(petalColor || '#D81B60'), [petalColor]);
+  const innerColor = useMemo(
+    () => outerColor.clone().lerp(new THREE.Color('#ffffff'), cfg.innerBlend),
+    [cfg.innerBlend, outerColor]
+  );
 
-  const centerColor = useMemo(() => {
-    return new THREE.Color(flowerData.centerCoreColor).lerp(new THREE.Color(flowerData.color), 0.12);
-  }, [flowerData.centerCoreColor, flowerData.color]);
-
-  const stemColors = useMemo(() => {
-    const stem = new THREE.Color(genes.stemColor || '#7A6B5A');
-    const leaf = new THREE.Color(genes.leafColor || '#6B8A5A');
-
-    const stemHsl = { h: 0, s: 0, l: 0 };
-    stem.getHSL(stemHsl);
-    const mutedStem = new THREE.Color().setHSL(
-      stemHsl.h,
-      Math.max(0.08, stemHsl.s * 0.45),
-      Math.max(0.2, stemHsl.l * 0.72)
-    );
-
-    const leafHsl = { h: 0, s: 0, l: 0 };
-    leaf.getHSL(leafHsl);
-    const mutedLeaf = new THREE.Color().setHSL(
-      leafHsl.h,
-      Math.max(0.1, leafHsl.s * 0.5),
-      Math.max(0.22, leafHsl.l * 0.68)
-    );
-
-    return { stem: mutedStem, leaf: mutedLeaf };
-  }, [genes.leafColor, genes.stemColor]);
-  
   useFrame((state) => {
-    if (groupRef.current && !noRotation) {
-      const time = state.clock.getElapsedTime();
-      // Gentle sway (disabled for decorative flowers)
-      groupRef.current.rotation.z = Math.sin(time * 0.8 + genes.seed) * 0.03;
-      groupRef.current.rotation.x = Math.sin(time * 0.6 + genes.seed * 0.5) * 0.02;
-    }
-    
-    // Update shader time uniforms
-    materialRefs.current.forEach(mat => {
-      if (mat && mat.uniforms.uTime) {
-        mat.uniforms.uTime.value = state.clock.getElapsedTime();
-      }
-    });
+    if (!groupRef.current || noRotation) return;
+    const t = state.clock.getElapsedTime();
+    groupRef.current.rotation.z = Math.sin(t * 0.78 + genes.seed * 0.001) * 0.04;
+    groupRef.current.rotation.x = Math.sin(t * 0.48 + genes.seed * 0.0007) * 0.025;
   });
-  
-  // Create stem geometry from curve
-  const stemGeometry = useMemo(() => {
-    // Ultra-minimal stem mesh: only a few wireframe lines
-    return new THREE.TubeGeometry(flowerData.stemCurve, 1, 0.012, 3, false);
-  }, [flowerData.stemCurve]);
-  
+
   return (
     <group ref={groupRef} position={position} scale={scale}>
-      {/* Curved stem */}
-      <mesh geometry={stemGeometry}>
-        <meshBasicMaterial color={stemColors.stem} wireframe />
+      <mesh geometry={flowerData.stemGeom}>
+        <meshBasicMaterial color="#6a8f66" wireframe />
       </mesh>
 
-      {flowerData.stemLeaves.map((leaf, i) => {
-        const point = flowerData.stemCurve.getPoint(leaf.t);
-        const tangent = flowerData.stemCurve.getTangent(leaf.t);
-        const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
-        const leafPos = point.clone().add(normal.multiplyScalar(leaf.spread));
-        const yaw = Math.atan2(tangent.x, tangent.z) + leaf.yawOffset;
-
-        return (
-          <mesh
-            key={`stem-leaf-${i}`}
-            geometry={stemLeafGeometry}
-            position={leafPos}
-            rotation={[
-              Math.PI / 2 - 0.25,
-              yaw,
-              leaf.roll,
-            ]}
-            scale={[leaf.sizeX, leaf.sizeY, 1]}
-          >
-            <meshBasicMaterial color={stemColors.leaf} wireframe side={THREE.DoubleSide} />
-          </mesh>
-        );
-      })}
-      
-      {/* Flower head - positioned at end of bent stem, perpendicular to stem direction */}
-      <group 
-        position={[
-          flowerData.finalOffsetX,
-          flowerData.stemHeight,
-          flowerData.finalOffsetZ
-        ]} 
-        rotation={[
-          flowerData.headTiltX + flowerData.stemRotationX + Math.PI / 2, // 90 degrees to be perpendicular
-          flowerData.stemRotationY,
-          flowerData.headTiltZ
-        ]}
-      >
-        {/* Tiny center (pistil/stamen) */}
-        <mesh>
-          <primitive object={centerGeometry} attach="geometry" />
-          <meshStandardMaterial 
-            color={flowerData.centerCoreColor}
-            roughness={0.5}
-            metalness={0.05}
-            emissive={flowerData.centerCoreColor}
-            emissiveIntensity={0.08}
-          />
+      {flowerData.leaves.map((leaf, i) => (
+        <mesh
+          key={`leaf-${i}`}
+          geometry={leaf.geom}
+          position={[Math.cos(leaf.angle) * 0.05, leaf.y, Math.sin(leaf.angle) * 0.05]}
+          rotation={[Math.PI / 2 - 0.22, leaf.angle, leaf.roll]}
+          scale={[leaf.width * 0.14, leaf.length * 0.2, 1]}
+        >
+          <meshBasicMaterial color="#82a071" wireframe side={THREE.DoubleSide} />
         </mesh>
-        
-        {/* Petals arranged around center */}
-        {flowerData.petalData.map((petal, i) => (
-          <mesh
-            key={i}
-            geometry={petalGeometry}
-            position={[
-              Math.cos(petal.angle) * petal.radius,
-              0,
-              Math.sin(petal.angle) * petal.radius
-            ]}
-            rotation={[
-              Math.PI / 2 - petal.tiltAngle,
-              0,
-              -petal.angle + Math.PI
-            ]}
-            scale={[
-              flowerData.petalWidth * petal.petalScale,
-              flowerData.petalLength * petal.petalScale,
-              1
-            ]}
-          >
-            <flowerPetalMaterial
-              ref={(el) => {
-                if (el) materialRefs.current[i] = el as THREE.ShaderMaterial;
-              }}
-              uColor={new THREE.Color(flowerData.color)}
-              uCenterColor={centerColor}
-              uStylized={stylized ? 1.0 : 0.0}
-              side={THREE.DoubleSide}
-              transparent
-            />
-          </mesh>
-        ))}
-        
-        {/* Inner petals (smaller, for fullness) */}
-        {flowerData.innerPetalData.map((petal, i) => (
-          <mesh
-            key={`inner-${i}`}
-            geometry={petalGeometry}
-            position={[
-              Math.cos(petal.angle) * petal.radius,
-              0.002,
-              Math.sin(petal.angle) * petal.radius
-            ]}
-            rotation={[
-              Math.PI / 2 - 0.15,
-              0,
-              -petal.angle + Math.PI
-            ]}
-            scale={[
-              flowerData.petalWidth * petal.petalScale * 0.7,
-              flowerData.petalLength * petal.petalScale * 0.65,
-              1
-            ]}
-          >
-            <flowerPetalMaterial
-              ref={(el) => {
-                if (el) materialRefs.current[flowerData.petalData.length + i] = el as THREE.ShaderMaterial;
-              }}
-              uColor={innerColor}
-              uCenterColor={centerColor}
-              uStylized={stylized ? 1.0 : 0.0}
-              side={THREE.DoubleSide}
-              transparent
-            />
-          </mesh>
-        ))}
+      ))}
+
+      <group position={flowerData.headOffset} rotation={flowerData.headTilt}>
+        <mesh geometry={flowerData.centerGeom}>
+          <meshBasicMaterial color={cfg.centerColor} wireframe />
+        </mesh>
+
+        {flowerData.layers.map((layer, layerIndex) =>
+          layer.petals.map((petal, petalIndex) => (
+            <lineSegments
+              key={`layer-${layerIndex}-petal-${petalIndex}`}
+              geometry={layer.edgeGeom}
+              position={petal.position}
+              rotation={petal.rotation}
+              scale={petal.scale}
+            >
+              <lineBasicMaterial color={layerIndex === 0 ? outerColor : innerColor} />
+            </lineSegments>
+          ))
+        )}
       </group>
-      
-    </group>
-  );
-};
-
-// ============================================
-// PROCEDURAL BUSH
-// ============================================
-
-interface BushProps {
-  genes: PlantGenes;
-  isSelected?: boolean;
-  isHovered?: boolean;
-}
-
-export const ProceduralBush = ({ genes, isSelected, isHovered }: BushProps) => {
-  const groupRef = useRef<THREE.Group>(null);
-  
-  const bushData = useMemo(() => {
-    const rng = new SeededRandom(genes.seed);
-    const clusterCount = 6 + rng.int(0, 5);
-    const trunkHeight = 0.22 + rng.range(0, 0.18);
-    const trunkRadius = 0.03 + rng.range(0, 0.02);
-    const clusters: Array<{
-      position: [number, number, number];
-      scale: number;
-      color: string;
-    }> = [];
-    
-    // Create a cohesive canopy around a central trunk
-    for (let i = 0; i < clusterCount; i++) {
-      const theta = rng.range(0, Math.PI * 2);
-      const phi = rng.range(0.15, Math.PI * 0.55);
-      const radius = genes.height * 0.3 * rng.range(0.45, 0.9);
-      
-      const x = Math.sin(phi) * Math.cos(theta) * radius;
-      const y = trunkHeight + Math.cos(phi) * radius * 0.55;
-      const z = Math.sin(phi) * Math.sin(theta) * radius;
-      
-      clusters.push({
-        position: [x, y, z],
-        scale: 0.28 + rng.range(0, 0.18),
-        color: rng.pick([genes.leafColor, '#7BA05B', '#8BC06B', '#6B9A5B']),
-      });
-    }
-    
-    // Pre-compute flower colors for each cluster
-    const flowerColors = clusters.slice(0, 4).map(() => ({
-      color: rng.pick(['#FFB6C1', '#FFFACD', '#E6E6FA']),
-    }));
-    
-    return { clusters, flowerColors, trunkHeight, trunkRadius };
-  }, [genes]);
-  
-  useFrame((state) => {
-    if (groupRef.current) {
-      const time = state.clock.getElapsedTime();
-      // Constant subtle sway, no rotation change on hover
-      const sway = 0.008;
-      groupRef.current.rotation.z = Math.sin(time * 0.8 + genes.seed) * sway;
-    }
-  });
-  
-  const scale = isSelected ? 1.05 : isHovered ? 1.02 : 1;
-  
-  return (
-    <group ref={groupRef} scale={scale}>
-      {/* Bush trunk */}
-      <mesh position={[0, bushData.trunkHeight * 0.5, 0]}>
-        <cylinderGeometry args={[bushData.trunkRadius * 0.75, bushData.trunkRadius, bushData.trunkHeight, 6]} />
-        <meshBasicMaterial color="#7A6248" wireframe />
-      </mesh>
-
-      {/* Bush clusters */}
-      {bushData.clusters.map((cluster, i) => (
-        <mesh
-          key={i}
-          position={cluster.position}
-          scale={cluster.scale}
-          castShadow
-        >
-          <dodecahedronGeometry args={[1, 1]} />
-          <meshBasicMaterial
-            color={cluster.color}
-            wireframe
-          />
-        </mesh>
-      ))}
-      
-      {/* Small flowers on bush (optional based on gene) */}
-      {genes.hasGlow && bushData.clusters.slice(0, 4).map((cluster, i) => (
-        <mesh
-          key={`flower-${i}`}
-          position={[
-            cluster.position[0] * 1.1,
-            cluster.position[1] + 0.1,
-            cluster.position[2] * 1.1
-          ]}
-          scale={0.05}
-        >
-          <sphereGeometry args={[1, 6, 6]} />
-          <meshBasicMaterial
-            color={bushData.flowerColors[i]?.color || '#FFB6C1'}
-            wireframe
-          />
-        </mesh>
-      ))}
     </group>
   );
 };
@@ -806,103 +702,6 @@ export const ProceduralGrassCluster = ({
             side={THREE.DoubleSide}
           />
         </mesh>
-      ))}
-    </group>
-  );
-};
-
-// ============================================
-// PROCEDURAL FERN/PLANT
-// ============================================
-
-interface FernProps {
-  genes: PlantGenes;
-  isSelected?: boolean;
-  isHovered?: boolean;
-}
-
-export const ProceduralFern = ({ genes, isSelected, isHovered }: FernProps) => {
-  const groupRef = useRef<THREE.Group>(null);
-  const rng = useMemo(() => new SeededRandom(genes.seed), [genes.seed]);
-  const leafletGeometry = useMemo(() => createPetalGeometry(), []);
-  
-  const fronds = useMemo(() => {
-    const count = 5 + rng.int(0, 4);
-    return Array.from({ length: count }).map((_, i) => {
-      const angle = (i / count) * Math.PI * 2 + rng.range(-0.2, 0.2);
-      const length = genes.height * 0.6 * rng.range(0.7, 1.0);
-      const curl = rng.range(0.3, 0.6);
-      
-      // Create frond curve
-      const points: THREE.Vector3[] = [];
-      const segments = 8;
-      for (let j = 0; j <= segments; j++) {
-        const t = j / segments;
-        const x = Math.cos(angle) * t * length;
-        const y = t * length * 0.3 - t * t * curl * length;
-        const z = Math.sin(angle) * t * length;
-        points.push(new THREE.Vector3(x, y + 0.1, z));
-      }
-      
-      return {
-        curve: new THREE.CatmullRomCurve3(points),
-        leaflets: rng.int(10, 16),
-        color: rng.pick([genes.leafColor, '#5A8A4A', '#6B9A5B']),
-      };
-    });
-  }, [genes, rng]);
-  
-  useFrame((state) => {
-    if (groupRef.current) {
-      const time = state.clock.getElapsedTime();
-      // Constant subtle sway, no rotation change on hover
-      const sway = 0.01;
-      groupRef.current.rotation.z = Math.sin(time * 0.6 + genes.seed) * sway;
-      groupRef.current.rotation.x = Math.sin(time * 0.4 + genes.seed * 0.5) * sway * 0.5;
-    }
-  });
-  
-  const scale = isSelected ? 1.06 : isHovered ? 1.03 : 1;
-  
-  return (
-    <group ref={groupRef} scale={scale}>
-      {fronds.map((frond, i) => (
-        <group key={i}>
-          {/* Frond stem */}
-          <mesh>
-            <tubeGeometry args={[frond.curve, 8, 0.01, 4, false]} />
-            <meshBasicMaterial color="#6B8A5A" wireframe />
-          </mesh>
-          
-          {/* Leaflets along frond */}
-          {Array.from({ length: frond.leaflets }).map((_, j) => {
-            const t = (j + 1) / (frond.leaflets + 1);
-            const pos = frond.curve.getPoint(t);
-            const tangent = frond.curve.getTangent(t);
-            const side = j % 2 === 0 ? 1 : -1;
-            const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
-            const spread = (0.035 + 0.045 * (1 - t * 0.6)) * side;
-            const leafletPos = pos.clone().add(normal.multiplyScalar(spread));
-            const yaw = Math.atan2(tangent.x, tangent.z) + side * 0.9;
-            const roll = side * (0.18 + (1 - t) * 0.12);
-            
-            return (
-              <mesh
-                key={j}
-                geometry={leafletGeometry}
-                position={leafletPos}
-                rotation={[
-                  Math.PI / 2 - (0.2 + t * 0.15),
-                  yaw,
-                  roll
-                ]}
-                scale={[0.085 * (1 - t * 0.45), 0.18 * (1 - t * 0.25), 1]}
-              >
-                <meshBasicMaterial color={frond.color} wireframe side={THREE.DoubleSide} />
-              </mesh>
-            );
-          })}
-        </group>
       ))}
     </group>
   );

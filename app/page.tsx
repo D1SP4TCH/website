@@ -8,10 +8,10 @@ const GardenScene = dynamic(
   { 
     ssr: false,
     loading: () => (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ background: '#E8E4D5' }}>
+      <div className="fixed inset-0 flex items-center justify-center bg-[#2f3731]">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-[#4A4035]/20 border-t-[#4A4035] rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sm" style={{ color: '#8B8075' }}>Growing garden...</p>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-2 border-white/20 border-t-[#d2c22d]" />
+          <p className="text-sm font-medium uppercase tracking-[0.16em] text-white/65">Growing garden...</p>
         </div>
       </div>
     )

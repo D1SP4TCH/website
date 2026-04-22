@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
+import Link from 'next/link';
 import { GARDEN_PALETTE, type GardenProject } from '@/lib/data/garden-portfolio';
 import { getPlantTypeName } from '@/lib/utils/plant-generator';
+import { getFeaturedProjectBySlug } from '@/lib/data/featured-projects';
+import { displayProjectYear } from '@/lib/utils/display-project-year';
 
 interface ProjectDetailCardProps {
   project: GardenProject | null;
@@ -10,56 +13,75 @@ interface ProjectDetailCardProps {
 }
 
 /**
- * Minimal, elegant project detail card
- * Slides in from the right when a plant is clicked
+ * Minimal, elegant project detail card.
+ * Slides in from the right when a plant is clicked in view mode.
+ *
+ * Behavior:
+ * - If the plant is linked to a featured project, display the live project
+ *   info (pulled from the shared data file) and a CTA into the case study.
+ * - Otherwise fall back to the plant's own inline title/description — handy
+ *   for legacy data that pre-dates project linking.
+ * - Empty/decorative plants are filtered out upstream; this card just
+ *   exits early if one sneaks through.
  */
 export const ProjectDetailCard = ({ project, onClose }: ProjectDetailCardProps) => {
-  // Handle escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
       }
     };
-    
+
     if (project) {
       window.addEventListener('keydown', handleEscape);
       return () => window.removeEventListener('keydown', handleEscape);
     }
   }, [project, onClose]);
-  
-  if (!project) return null;
-  
+
+  if (!project || project.isEmpty) return null;
+
+  const linked = project.projectSlug
+    ? getFeaturedProjectBySlug(project.projectSlug)
+    : null;
+
   const plantType = getPlantTypeName(project);
-  
+  const title = linked?.title ?? project.title;
+  const description = linked?.tagline ?? project.description;
+  const techStack = linked?.techStack ?? project.techStack;
+  const year = displayProjectYear(
+    linked?.year ?? new Date(project.date).getFullYear(),
+  );
+  const role = linked?.role ?? null;
+  const liveUrl = linked?.liveUrl ?? project.liveUrl;
+  const liveLabel = linked?.liveLabel ?? (liveUrl?.startsWith('/') ? 'Open' : 'View live');
+
   return (
-    <div 
-      className="absolute top-0 right-0 h-full w-full sm:w-96 flex items-center justify-end pointer-events-none"
+    <div
+      className="absolute top-0 right-0 h-full w-full sm:w-[28rem] flex items-center justify-end pointer-events-none"
       role="dialog"
       aria-modal="true"
       aria-labelledby="project-title"
     >
-      <div 
-        className="h-full sm:h-auto sm:max-h-[80vh] w-full sm:w-auto m-0 sm:m-6 p-6 sm:p-8 bg-white/95 backdrop-blur-md sm:rounded-2xl shadow-2xl pointer-events-auto overflow-y-auto animate-in slide-in-from-right duration-300"
+      <div
+        className="h-full sm:h-auto sm:max-h-[80vh] w-full sm:w-auto m-0 sm:m-6 p-10 sm:p-12 bg-white/95 backdrop-blur-md sm:rounded-2xl shadow-2xl pointer-events-auto overflow-y-auto animate-in slide-in-from-right duration-300"
         style={{ color: GARDEN_PALETTE.text }}
       >
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4 mb-6">
-          <div className="flex-1">
-            <p 
-              className="text-xs uppercase tracking-wider mb-1"
+        <div className="flex items-start justify-between gap-5 mb-7">
+          <div className="flex-1 min-w-0">
+            <p
+              className="text-xs uppercase tracking-wider mb-2 break-words"
               style={{ color: GARDEN_PALETTE.textMuted }}
             >
-              {plantType}
+              {linked?.category ?? plantType}
             </p>
-            <h2 
+            <h2
               id="project-title"
-              className="text-2xl font-medium leading-tight"
+              className="text-2xl font-medium leading-tight break-words"
             >
-              {project.title}
+              {title}
             </h2>
           </div>
-          
+
           <button
             onClick={onClose}
             className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/5 transition-colors"
@@ -70,41 +92,49 @@ export const ProjectDetailCard = ({ project, onClose }: ProjectDetailCardProps) 
             </svg>
           </button>
         </div>
-        
-        {/* Description */}
-        <p 
-          className="text-sm leading-relaxed mb-6"
-          style={{ color: GARDEN_PALETTE.textMuted }}
-        >
-          {project.description}
-        </p>
-        
-        {/* Tech Stack */}
-        <div className="mb-6">
-          <p 
-            className="text-xs uppercase tracking-wider mb-2"
+
+        {description && (
+          <p
+            className="text-sm leading-relaxed mb-6 break-words"
             style={{ color: GARDEN_PALETTE.textMuted }}
           >
-            Technologies
+            {description}
           </p>
-          <div className="flex flex-wrap gap-2">
-            {project.techStack.map((tech, i) => (
-              <span
-                key={i}
-                className="px-3 py-1 text-xs rounded-full bg-black/5"
-                style={{ color: GARDEN_PALETTE.text }}
-              >
-                {tech}
-              </span>
-            ))}
+        )}
+
+        {techStack.length > 0 && (
+          <div className="mb-6">
+            <p
+              className="text-xs uppercase tracking-wider mb-2"
+              style={{ color: GARDEN_PALETTE.textMuted }}
+            >
+              Technologies
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {techStack.map((tech, i) => (
+                <span
+                  key={i}
+                  className="px-3 py-1 text-xs rounded-full bg-black/5 max-w-full break-words"
+                  style={{ color: GARDEN_PALETTE.text }}
+                >
+                  {tech}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
-        
-        {/* Meta info */}
-        <div className="flex items-center gap-4 mb-6 text-xs" style={{ color: GARDEN_PALETTE.textMuted }}>
-          <span>{project.monthsDuration} {project.monthsDuration === 1 ? 'month' : 'months'}</span>
-          <span>•</span>
-          <span>{new Date(project.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}</span>
+        )}
+
+        <div
+          className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6 text-xs"
+          style={{ color: GARDEN_PALETTE.textMuted }}
+        >
+          <span>{year}</span>
+          {role && (
+            <>
+              <span>•</span>
+              <span>{role}</span>
+            </>
+          )}
           {project.featured && (
             <>
               <span>•</span>
@@ -112,41 +142,64 @@ export const ProjectDetailCard = ({ project, onClose }: ProjectDetailCardProps) 
             </>
           )}
         </div>
-        
-        {/* Links */}
-        <div className="flex gap-3">
-          {project.liveUrl && (
-            <a
-              href={project.liveUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 px-4 py-2.5 text-sm text-center rounded-lg transition-colors"
-              style={{ 
+
+        <div className="flex flex-wrap gap-3">
+          {linked?.hasCaseStudy && (
+            <Link
+              href={`/projects/${linked.slug}`}
+              className="flex-1 min-w-[9rem] px-4 py-2.5 text-sm text-center rounded-lg transition-colors"
+              style={{
                 backgroundColor: GARDEN_PALETTE.text,
-                color: '#fff'
+                color: '#fff',
               }}
             >
-              View Live
-            </a>
+              Read the case study →
+            </Link>
+          )}
+          {liveUrl && (
+            liveUrl.startsWith('/') ? (
+              <Link
+                href={liveUrl}
+                className="flex-1 min-w-[9rem] px-4 py-2.5 text-sm text-center border rounded-lg hover:bg-black/5 transition-colors"
+                style={{
+                  borderColor: GARDEN_PALETTE.text,
+                  color: GARDEN_PALETTE.text,
+                }}
+              >
+                {liveLabel}
+              </Link>
+            ) : (
+              <a
+                href={liveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 min-w-[9rem] px-4 py-2.5 text-sm text-center border rounded-lg hover:bg-black/5 transition-colors"
+                style={{
+                  borderColor: GARDEN_PALETTE.text,
+                  color: GARDEN_PALETTE.text,
+                }}
+              >
+                {liveLabel}
+              </a>
+            )
           )}
           {project.githubUrl && (
             <a
               href={project.githubUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 px-4 py-2.5 text-sm text-center border rounded-lg hover:bg-black/5 transition-colors"
-              style={{ 
+              className="flex-1 min-w-[9rem] px-4 py-2.5 text-sm text-center border rounded-lg hover:bg-black/5 transition-colors"
+              style={{
                 borderColor: GARDEN_PALETTE.text,
-                color: GARDEN_PALETTE.text
+                color: GARDEN_PALETTE.text,
               }}
             >
               GitHub
             </a>
           )}
         </div>
-        
-        {/* Keyboard hint */}
-        <p 
+
+        <p
           className="mt-6 text-xs text-center"
           style={{ color: GARDEN_PALETTE.textMuted }}
         >
@@ -156,7 +209,3 @@ export const ProjectDetailCard = ({ project, onClose }: ProjectDetailCardProps) 
     </div>
   );
 };
-
-
-
-

@@ -8,26 +8,34 @@ import React, {
   useEffect,
   useRef,
 } from 'react';
-import { GardenProject, sampleProjects } from '@/lib/data/garden-portfolio';
+import {
+  GardenProject,
+  sampleProjects,
+  type ProjectType,
+} from '@/lib/data/garden-portfolio';
 
 interface GardenEditorContextType {
   // State
   isEditMode: boolean;
+  isAuthorized: boolean;
   projects: GardenProject[];
   selectedProjectId: string | null;
   isSaving: boolean;
   hasUnsavedChanges: boolean;
-  
+
   // Actions
-  toggleEditMode: () => void;
-  setEditMode: (mode: boolean) => void;
+  toggleEditMode: () => Promise<void> | void;
+  setEditMode: (mode: boolean) => Promise<void> | void;
   selectProject: (id: string | null) => void;
   addProject: (project: Omit<GardenProject, 'id'>) => void;
   updateProject: (id: string, updates: Partial<GardenProject>) => void;
   deleteProject: (id: string) => void;
   moveProject: (id: string, position: [number, number, number]) => void;
   saveNow: () => Promise<void>;
+  signOut: () => void;
 }
+
+const TOKEN_STORAGE_KEY = 'garden:editor-token';
 
 const GardenEditorContext = createContext<GardenEditorContextType | null>(null);
 
@@ -55,8 +63,22 @@ export function GardenEditorProvider({ children }: GardenEditorProviderProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  
+  const [editToken, setEditToken] = useState<string | null>(null);
+
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const authPromptInFlightRef = useRef(false);
+
+  // Restore a previously verified owner token from localStorage so the
+  // owner doesn't have to re-enter the password on every visit.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const stored = window.localStorage.getItem(TOKEN_STORAGE_KEY);
+      if (stored) setEditToken(stored);
+    } catch {
+      // localStorage unavailable (private mode, etc.) - silently ignore.
+    }
+  }, []);
 
   // Load projects from API on mount
   useEffect(() => {
@@ -65,7 +87,14 @@ export function GardenEditorProvider({ children }: GardenEditorProviderProps) {
         const res = await fetch('/api/garden');
         const data = await res.json();
         if (data.projects && data.projects.length > 0) {
-          setProjects(data.projects);
+          const normalized = (
+            data.projects as Array<GardenProject & { type?: ProjectType | 'backend' }>
+          ).map((p) =>
+            (p.type as string) === 'backend'
+              ? { ...p, type: 'web' as ProjectType }
+              : p,
+          );
+          setProjects(normalized);
         }
         // If no projects in KV, keep the sample projects
       } catch (error) {
@@ -78,23 +107,41 @@ export function GardenEditorProvider({ children }: GardenEditorProviderProps) {
     loadProjects();
   }, []);
 
-  // Auto-save with debounce
-  const saveToAPI = useCallback(async (projectsToSave: GardenProject[]) => {
-    setIsSaving(true);
-    try {
-      const res = await fetch('/api/garden', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projects: projectsToSave }),
-      });
-      if (!res.ok) throw new Error('Save failed');
-      setHasUnsavedChanges(false);
-    } catch (error) {
-      console.error('Failed to save projects:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  }, []);
+  // Auto-save with debounce. Requires a verified owner token; without it
+  // we never even call the API so non-owners can't probe the endpoint.
+  const saveToAPI = useCallback(
+    async (projectsToSave: GardenProject[]) => {
+      if (!editToken) return;
+      setIsSaving(true);
+      try {
+        const res = await fetch('/api/garden', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-edit-token': editToken,
+          },
+          body: JSON.stringify({ projects: projectsToSave }),
+        });
+        if (res.status === 404 || res.status === 401) {
+          // Token rotated/revoked on the server. Drop it so the next
+          // edit attempt re-prompts.
+          try {
+            window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+          } catch {}
+          setEditToken(null);
+          setIsEditMode(false);
+          return;
+        }
+        if (!res.ok) throw new Error('Save failed');
+        setHasUnsavedChanges(false);
+      } catch (error) {
+        console.error('Failed to save projects:', error);
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [editToken],
+  );
 
   // Debounced save trigger
   const triggerSave = useCallback((projectsToSave: GardenProject[]) => {
@@ -117,19 +164,74 @@ export function GardenEditorProvider({ children }: GardenEditorProviderProps) {
     await saveToAPI(projects);
   }, [saveToAPI, projects]);
 
-  // Toggle edit mode
-  const toggleEditMode = useCallback(() => {
-    setIsEditMode(prev => !prev);
-    if (isEditMode) {
-      setSelectedProjectId(null);
-    }
-  }, [isEditMode]);
+  // Ask the server to validate a password. We never store unverified
+  // input - only a server-confirmed token lands in localStorage.
+  const requestAuthorization = useCallback(async (): Promise<boolean> => {
+    if (typeof window === 'undefined') return false;
+    if (authPromptInFlightRef.current) return false;
+    authPromptInFlightRef.current = true;
+    try {
+      // Generic prompt copy on purpose - doesn't reveal what's behind it.
+      const password = window.prompt('');
+      if (!password) return false;
 
-  const setEditMode = useCallback((mode: boolean) => {
-    setIsEditMode(mode);
-    if (!mode) {
-      setSelectedProjectId(null);
+      const res = await fetch('/api/garden/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+
+      if (!res.ok) return false;
+
+      try {
+        window.localStorage.setItem(TOKEN_STORAGE_KEY, password);
+      } catch {
+        // If we can't persist, we still allow the current session.
+      }
+      setEditToken(password);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      authPromptInFlightRef.current = false;
     }
+  }, []);
+
+  // Toggle edit mode (gated by a verified owner token).
+  const toggleEditMode = useCallback(async () => {
+    if (!editToken) {
+      const ok = await requestAuthorization();
+      if (!ok) return;
+      setIsEditMode(true);
+      return;
+    }
+    setIsEditMode((prev) => {
+      if (prev) setSelectedProjectId(null);
+      return !prev;
+    });
+  }, [editToken, requestAuthorization]);
+
+  const setEditMode = useCallback(
+    async (mode: boolean) => {
+      if (mode && !editToken) {
+        const ok = await requestAuthorization();
+        if (!ok) return;
+      }
+      setIsEditMode(mode);
+      if (!mode) {
+        setSelectedProjectId(null);
+      }
+    },
+    [editToken, requestAuthorization],
+  );
+
+  const signOut = useCallback(() => {
+    try {
+      window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+    } catch {}
+    setEditToken(null);
+    setIsEditMode(false);
+    setSelectedProjectId(null);
   }, []);
 
   // Select a project
@@ -193,7 +295,7 @@ export function GardenEditorProvider({ children }: GardenEditorProviderProps) {
       }
       
       if (e.key === 'e' || e.key === 'E') {
-        toggleEditMode();
+        void toggleEditMode();
       }
       
       if (e.key === 'Escape') {
@@ -211,6 +313,7 @@ export function GardenEditorProvider({ children }: GardenEditorProviderProps) {
 
   const value: GardenEditorContextType = {
     isEditMode,
+    isAuthorized: editToken !== null,
     projects,
     selectedProjectId,
     isSaving,
@@ -223,6 +326,7 @@ export function GardenEditorProvider({ children }: GardenEditorProviderProps) {
     deleteProject,
     moveProject,
     saveNow,
+    signOut,
   };
 
   return (

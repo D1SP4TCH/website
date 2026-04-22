@@ -8,12 +8,16 @@ interface MagneticButtonProps {
   children: React.ReactNode;
   className?: string;
   strength?: number;
+  type?: "button" | "submit" | "reset";
+  disabled?: boolean;
 }
 
 export function MagneticButton({
   children,
   className = "",
   strength = 0.3,
+  type = "button",
+  disabled,
 }: MagneticButtonProps) {
   const ref = useRef<HTMLButtonElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -36,11 +40,17 @@ export function MagneticButton({
   return (
     <motion.button
       ref={ref}
+      type={type}
+      disabled={disabled}
       onMouseMove={handleMouse}
       onMouseLeave={handleMouseLeave}
       animate={position}
       transition={{ type: "spring", stiffness: 150, damping: 15, mass: 0.1 }}
-      className={cn("relative", className)}
+      className={cn(
+        "relative",
+        disabled && "pointer-events-none opacity-60",
+        className,
+      )}
       data-cursor-hover
     >
       {children}

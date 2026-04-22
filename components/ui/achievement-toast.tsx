@@ -31,15 +31,15 @@ export function AchievementToast({
           exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
           className="fixed bottom-8 right-8 z-[9998] max-w-sm"
         >
-          <div className="overflow-hidden rounded-2xl border border-primary bg-card p-6 shadow-2xl">
+          <div className="overflow-hidden rounded-2xl border border-primary bg-card px-7 py-6 shadow-2xl">
             <div className="flex items-start gap-4">
-              <div className="text-4xl">{achievement.icon}</div>
-              <div className="flex-1">
-                <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-primary">
+              <div className="text-4xl leading-none">{achievement.icon}</div>
+              <div className="flex-1 min-w-0">
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-primary break-words">
                   Achievement Unlocked!
                 </div>
-                <h3 className="mb-1 font-bold">{achievement.title}</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="mb-1 font-bold break-words">{achievement.title}</h3>
+                <p className="text-sm text-muted-foreground break-words">
                   {achievement.description}
                 </p>
               </div>
