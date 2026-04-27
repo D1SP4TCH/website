@@ -318,6 +318,76 @@ body[data-hide-top-chrome="true"] [data-top-chrome] {
   transform: translateY(-8px);
 }
 
+body[data-splash-open="true"] [data-top-chrome],
+body[data-splash-open="true"] [data-bottom-chrome],
+body[data-splash-open="true"] nav,
+body[data-splash-open="true"] [data-scroll-progress],
+body[data-splash-open="true"] [data-accessibility-menu] {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+body[data-splash-open="true"] #main-content {
+  padding-top: 0 !important;
+  background-color: #2f3731 !important;
+}
+
+body[data-splash-open="true"] {
+  overflow: hidden !important;
+  user-select: none;
+}
+
+.garden-splash-backdrop {
+  opacity: 0;
+  visibility: hidden;
+  transform: none;
+  transform-origin: center center;
+}
+
+body[data-splash-open="true"] .garden-splash-backdrop,
+body[data-garden-active="true"] .garden-splash-backdrop {
+  opacity: 1;
+  visibility: visible;
+}
+
+body[data-splash-open="true"] .garden-splash-backdrop {
+  transition:
+    opacity 160ms ease;
+}
+
+body[data-splash-open="true"][data-garden-entering="true"] .garden-splash-backdrop,
+body[data-garden-active="true"] .garden-splash-backdrop {
+  transform: none;
+}
+
+body[data-splash-open="true"] .garden-splash-backdrop > div > :not(:first-child),
+body[data-garden-entering="true"] .garden-splash-backdrop > div > :not(:first-child) {
+  display: none !important;
+}
+
+.garden-splash-backdrop canvas {
+  pointer-events: none !important;
+}
+
+@media (max-width: 767px) {
+  .garden-splash-backdrop {
+    transform: none;
+  }
+
+  body[data-splash-open="true"] .garden-splash-backdrop {
+    transform: none;
+  }
+
+  body[data-splash-open="true"][data-garden-entering="true"] .garden-splash-backdrop {
+    transform: none;
+  }
+
+  body[data-garden-active="true"] .garden-splash-backdrop {
+    transform: none;
+  }
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,

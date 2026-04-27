@@ -2,16 +2,6 @@
 
 import dynamic from 'next/dynamic';
 
-const IntroSplash = dynamic(
-  () => import('@/components/intro/intro-splash').then((mod) => ({ default: mod.IntroSplash })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="fixed inset-0 z-[60] bg-[#f5f1e6]" aria-hidden="true" />
-    ),
-  }
-);
-
 const GardenScene = dynamic(
   () => import('@/components/3d/garden-scene').then((mod) => ({ default: mod.GardenScene })),
   {
@@ -27,13 +17,10 @@ const GardenScene = dynamic(
   }
 );
 
-export default function Home() {
+export default function GardenPage() {
   return (
-    <main className="fixed inset-0 h-screen w-screen select-none overflow-hidden bg-[#f5f1e6]">
-      <div className="garden-splash-backdrop absolute inset-0">
-        <GardenScene />
-      </div>
-      <IntroSplash />
+    <main className="fixed inset-0 h-screen w-screen overflow-hidden">
+      <GardenScene />
     </main>
   );
 }

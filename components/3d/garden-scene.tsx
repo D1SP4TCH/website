@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, Suspense } from 'react';
+import React, { useState, useCallback, useEffect, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import { ProceduralPlant } from './procedural-plant';
@@ -39,6 +39,40 @@ const GardenSceneInner = () => {
   
   const [hoveredProject, setHoveredProject] = useState<string | null>(null);
   const [viewingProject, setViewingProject] = useState<GardenProject | null>(null);
+  const [isIdle, setIsIdle] = useState(false);
+
+  useEffect(() => {
+    let idleTimer: number | null = null;
+
+    const resetIdleTimer = (event?: Event) => {
+      const splashIsOpen = document.body.dataset.splashOpen === 'true';
+      if (splashIsOpen && (event?.type === 'pointermove' || event?.type === 'touchmove')) {
+        return;
+      }
+
+      setIsIdle(false);
+      if (idleTimer) window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(() => setIsIdle(true), 2500);
+    };
+
+    resetIdleTimer();
+
+    const events: Array<keyof WindowEventMap> = [
+      'pointermove',
+      'pointerdown',
+      'wheel',
+      'keydown',
+      'touchstart',
+      'touchmove',
+    ];
+
+    events.forEach((event) => window.addEventListener(event, resetIdleTimer, { passive: true }));
+
+    return () => {
+      if (idleTimer) window.clearTimeout(idleTimer);
+      events.forEach((event) => window.removeEventListener(event, resetIdleTimer));
+    };
+  }, []);
   
   const handleProjectClick = useCallback((project: GardenProject) => {
     if (isEditMode) {
@@ -81,6 +115,7 @@ const GardenSceneInner = () => {
             selectedId={isEditMode ? selectedProjectId : viewingProject?.id || null}
             hoveredId={hoveredProject}
             isEditMode={isEditMode}
+            autoRotate={isIdle && !isEditMode && !viewingProject}
             onProjectClick={handleProjectClick}
             onProjectHover={setHoveredProject}
             onProjectMove={handleMove}
@@ -179,6 +214,7 @@ interface SceneContentProps {
   selectedId: string | null;
   hoveredId: string | null;
   isEditMode: boolean;
+  autoRotate: boolean;
   onProjectClick: (project: GardenProject) => void;
   onProjectHover: (id: string | null) => void;
   onProjectMove: (id: string, position: [number, number, number]) => void;
@@ -189,6 +225,7 @@ const GardenSceneContent = ({
   selectedId,
   hoveredId,
   isEditMode,
+  autoRotate,
   onProjectClick,
   onProjectHover,
   onProjectMove,
@@ -217,6 +254,8 @@ const GardenSceneContent = ({
         maxPolarAngle={Math.PI / 2.2}
         rotateSpeed={0.35}
         zoomSpeed={0.5}
+        autoRotate={autoRotate}
+        autoRotateSpeed={0.35}
         enableDamping
         dampingFactor={0.05}
       />
